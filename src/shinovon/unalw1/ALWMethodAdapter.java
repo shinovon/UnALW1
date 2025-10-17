@@ -23,7 +23,7 @@ public class ALWMethodAdapter extends MethodVisitor {
 		if (className.endsWith("ALW1") && name.equals("startApp") && desc.equals("()V")) {
 			if (opcode == Opcodes.RETURN) {
 				super.visitVarInsn(Opcodes.ALOAD, 0);
-				super.visitMethodInsn(Opcodes.INVOKEVIRTUAL, name, "startRealApp", "()V");
+				super.visitMethodInsn(Opcodes.INVOKEVIRTUAL, className, "startRealApp", "()V");
 				System.out.println("ALW1.startApp() patched");
 				Main.alw1Found = true;
 			}
