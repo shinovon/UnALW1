@@ -19,18 +19,24 @@ public class Main {
 
 	public static void main(String[] args) {
 		
-		if (args.length != 3) {
+		if (args.length < 3) {
 			System.out.println("UnALW1 v1.0");
 			System.out.println("by shinovon, 2025");
 			System.out.println();
 			System.out.println("Usage:");
-			System.out.println("<injar> <outjar> <proguard.jar>");
+			System.out.println("<injar> <outjar> <proguard.jar> [<library jars>]");
 			return;
 		}
 		
 		String injar = args[0];
 		String outjar = args[1];
 		String proguard = args[2];
+		String libraryjars;
+		if (args.length > 3) {
+			libraryjars = args[3];
+		} else {
+			libraryjars = System.getProperty("java.home") + File.separatorChar + "lib" + File.separatorChar + "rt.jar";
+		}
 		
 		try {
 			File f;
@@ -44,6 +50,7 @@ public class Main {
 			}
 			
 			File temp = File.createTempFile("unalw1", ".jar");
+			temp.deleteOnExit();
 			try {
 				try (ZipFile zipFile = new ZipFile(injar)) {
 					try (ZipOutputStream zipOut = new ZipOutputStream(new FileOutputStream(temp))) {
@@ -81,23 +88,30 @@ public class Main {
 				}
 				System.out.println("Preverifying");
 				
-				Process p = Runtime.getRuntime().exec(new String[] {
+				ProcessBuilder builder = new ProcessBuilder(
+						new String[] {
 						System.getProperty("java.home") + File.separatorChar + "bin" + File.separatorChar + "java",
 						"-jar",
 						proguard,
-						"-microedition",
 						"-dontwarn",
+						"-dontnote",
 						"-dontobfuscate",
 						"-dontoptimize",
 						"-dontshrink",
+						"-microedition",
 						"-target",
 						"1.3",
+						"-libraryjars",
+						libraryjars,
 						"-injars",
 						temp.getAbsolutePath(),
 						"-outjar",
 						outjar,
-//						"-keep public class * extends javax.microedition.midlet.MIDlet"
-				});
+//						"-keep public class * extends javax.microedition.midlet.MIDlet").
+						}
+						);
+				builder.inheritIO();
+				Process p = builder.start();
 				
 				if (p.waitFor() != 0) {
 					System.err.println("Proguard failed");
