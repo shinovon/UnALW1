@@ -1,0 +1,34 @@
+/*
+Copyright (c) 2025 Arman Jussupgaliyev
+*/
+package shinovon.unalw1;
+
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
+
+public class ALWMethodAdapter extends MethodVisitor {
+
+	private String className;
+	private String name;
+	private String desc;
+
+	public ALWMethodAdapter(MethodVisitor visitor, String className, String name, String desc) {
+		super(Opcodes.ASM4, visitor);
+		this.className = className;
+		this.name = name;
+		this.desc = desc;
+	}
+	
+	public void visitInsn(int opcode) {
+		if (className.endsWith("ALW1") && name.equals("startApp") && desc.equals("()V")) {
+			if (opcode == Opcodes.RETURN) {
+				super.visitVarInsn(Opcodes.ALOAD, 0);
+				super.visitMethodInsn(Opcodes.INVOKEVIRTUAL, name, "startRealApp", "()V");
+				System.out.println("ALW1.startApp() patched");
+				Main.alw1Found = true;
+			}
+		}
+		super.visitInsn(opcode);
+	}
+
+}
