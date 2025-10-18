@@ -20,6 +20,7 @@ public class Main {
 	public static boolean alw1Found;
 	public static boolean vservFound;
 	public static boolean connectorFound;
+	public static boolean inneractiveFound;
 	
 	public static String mode;
 
@@ -28,7 +29,7 @@ public class Main {
 		if (args.length < 3) {
 			System.out.println("UnALW1 v2.0");
 			System.out.println("J2ME Ad engine removal tool");
-			System.out.println("Supports: ALW1, vServ");
+			System.out.println("Supports: ALW1, vServ, InnerActive");
 			System.out.println();
 			System.out.println("Usage: <injar> <outjar> <proguard> <libraryjars> [mode]");
 			System.out.println();
@@ -37,7 +38,7 @@ public class Main {
 			System.out.println(" outjar: Path to output jar");
 			System.out.println(" proguard: Path to proguard.jar, e.g: C:\\proguard-7.7.0\\lib\\proguard.jar");
 			System.out.println(" libraryjars: path to folder with MIDP libraries, e.g: C:\\Nokia\\Devices\\S40_5th_Edition_SDK\\lib");
-			System.out.println(" mode: auto/alw1/vserv, auto by default");
+			System.out.println(" mode: auto/alw1/vserv/ia, auto by default");
 			System.out.println();
 			System.out.println("By shinovon, 2025");
 			return;
@@ -49,7 +50,7 @@ public class Main {
 		String libraryjars = args[3];
 		mode = args.length > 4 ? args[4].toLowerCase() : "auto";
 		
-		if (!"auto".equals(mode) && !"alw1".equals(mode) && !"vserv".equals(mode)) {
+		if (!"auto".equals(mode) && !"alw1".equals(mode) && !"vserv".equals(mode) && !"ia".equals(mode)) {
 			System.err.println("Invalid mode");
 			System.exit(1);
 			return;
@@ -115,7 +116,7 @@ public class Main {
 						}
 					}
 				}
-				if (!vservFound && !alw1Found) {
+				if (!vservFound && !alw1Found && !inneractiveFound) {
 					if (!connectorFound) {
 						System.err.println("No ad engine was detected, aborting.");
 						System.exit(1);
