@@ -33,7 +33,7 @@ public class ALWMethodAdapter extends MethodVisitor {
 	
 	public void visitMethodInsn(int opcode, String owner, String name, String desc) {
 		if (!"alw1".equals(Main.mode) && "javax/microedition/io/Connector".equals(owner)) {
-			System.out.println("Connector call wrapped: " + name + " " + desc + " in " + className + " " + this.name + " " + desc);
+			System.out.println("Connector call wrapped: " + name + desc + " in " + className + '.' + this.name + this.desc);
 			Main.connectorFound = true;
 			owner = "UnVservConnector";
 		}
