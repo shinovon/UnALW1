@@ -105,7 +105,9 @@ public class Main {
 							try (ZipInputStream zipIn = new ZipInputStream("".getClass().getResourceAsStream("/vserv.jar"))) {
 								ZipEntry entry;
 								while ((entry = zipIn.getNextEntry()) != null) {
-									zipOut.putNextEntry(new ZipEntry(entry.getName()));
+									ZipEntry copy = new ZipEntry(entry);
+									copy.setCompressedSize(-1);
+									zipOut.putNextEntry(copy);
 									write(zipOut, zipIn);
 									zipOut.closeEntry();
 								}
