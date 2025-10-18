@@ -33,7 +33,7 @@ public class Main {
 	public static void main(String[] args) {
 		
 		if (args.length < 3) {
-			System.out.println("UnALW1 v2.0");
+			System.out.println("UnALW1 v3.0");
 			System.out.println("J2ME Ad engine removal tool");
 			System.out.println("Supports: ALW1, vServ, InnerActive, Hovr");
 			System.out.println();
