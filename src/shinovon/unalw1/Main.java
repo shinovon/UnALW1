@@ -26,6 +26,7 @@ public class Main {
 	public static boolean hovrFound;
 	
 	public static String mode;
+	public static boolean verbose;
 	
 	public static String wrapperStartMethod;
 
@@ -105,7 +106,7 @@ public class Main {
 									zipOut.closeEntry();
 									continue;
 								}
-								System.out.println("Transforming " + name);
+								if (verbose) System.out.println("Transforming " + name);
 								ClassReader classReader = new ClassReader(zipFile.getInputStream(entry));
 								ClassWriter classWriter = new ClassWriter(0);
 								classReader.accept(new ALWClassAdapter(classWriter, className), ClassReader.SKIP_DEBUG);
@@ -113,7 +114,7 @@ public class Main {
 								zipOut.write(classWriter.toByteArray());
 								zipOut.closeEntry();
 							} else {
-								System.out.println("Copying " + name);
+								if (verbose) System.out.println("Copying " + name);
 								try (InputStream in = zipFile.getInputStream(entry)) {
 									zipOut.putNextEntry(new ZipEntry(entry.getName()));
 									write(zipOut, in);
