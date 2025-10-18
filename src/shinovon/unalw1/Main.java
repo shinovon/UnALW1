@@ -14,6 +14,8 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 import org.objectweb.asm.*;
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.MethodNode;
 
 public class Main {
 	
@@ -21,15 +23,18 @@ public class Main {
 	public static boolean vservFound;
 	public static boolean connectorFound;
 	public static boolean inneractiveFound;
+	public static boolean hovrFound;
 	
 	public static String mode;
+	
+	public static String wrapperStartMethod;
 
 	public static void main(String[] args) {
 		
 		if (args.length < 3) {
 			System.out.println("UnALW1 v2.0");
 			System.out.println("J2ME Ad engine removal tool");
-			System.out.println("Supports: ALW1, vServ, InnerActive");
+			System.out.println("Supports: ALW1, vServ, InnerActive, Hovr");
 			System.out.println();
 			System.out.println("Usage: <injar> <outjar> <proguard> <libraryjars> [mode]");
 			System.out.println();
@@ -38,7 +43,7 @@ public class Main {
 			System.out.println(" outjar: Path to output jar");
 			System.out.println(" proguard: Path to proguard.jar, e.g: C:\\proguard-7.7.0\\lib\\proguard.jar");
 			System.out.println(" libraryjars: path to folder with MIDP libraries, e.g: C:\\Nokia\\Devices\\S40_5th_Edition_SDK\\lib");
-			System.out.println(" mode: auto/alw1/vserv/ia, auto by default");
+			System.out.println(" mode: auto/alw1/vserv/ia/hovr, auto by default");
 			System.out.println();
 			System.out.println("By shinovon, 2025");
 			return;
@@ -50,7 +55,7 @@ public class Main {
 		String libraryjars = args[3];
 		mode = args.length > 4 ? args[4].toLowerCase() : "auto";
 		
-		if (!"auto".equals(mode) && !"alw1".equals(mode) && !"vserv".equals(mode) && !"ia".equals(mode)) {
+		if (!"auto".equals(mode) && !"alw1".equals(mode) && !"vserv".equals(mode) && !"ia".equals(mode) && !"hovr".equals(mode)) {
 			System.err.println("Invalid mode");
 			System.exit(1);
 			return;
@@ -83,11 +88,27 @@ public class Main {
 									System.exit(1);
 									return;
 								}
+								if (className.equals("WRAPPER")) {
+									ClassReader classReader = new ClassReader(zipFile.getInputStream(entry));
+									ClassNode node = new ClassNode();
+									classReader.accept(new ALWClassAdapter(node, className), ClassReader.SKIP_DEBUG);
+									for (Object m : node.methods) {
+										MethodNode mn = (MethodNode) m;
+										if (wrapperStartMethod.equals(mn.name)) {
+											mn.name = "startApp";
+										}
+									}
+									ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+									node.accept(classWriter);
+									zipOut.putNextEntry(new ZipEntry(name));
+									zipOut.write(classWriter.toByteArray());
+									zipOut.closeEntry();
+									continue;
+								}
 								System.out.println("Transforming " + name);
 								ClassReader classReader = new ClassReader(zipFile.getInputStream(entry));
 								ClassWriter classWriter = new ClassWriter(0);
 								classReader.accept(new ALWClassAdapter(classWriter, className), ClassReader.SKIP_DEBUG);
-								
 								zipOut.putNextEntry(new ZipEntry(name));
 								zipOut.write(classWriter.toByteArray());
 								zipOut.closeEntry();
@@ -116,7 +137,7 @@ public class Main {
 						}
 					}
 				}
-				if (!vservFound && !alw1Found && !inneractiveFound) {
+				if (!vservFound && !alw1Found && !inneractiveFound && !hovrFound) {
 					if (!connectorFound) {
 						System.err.println("No ad engine was detected, aborting.");
 						System.exit(1);

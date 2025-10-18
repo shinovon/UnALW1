@@ -9,12 +9,14 @@ import org.objectweb.asm.Opcodes;
 public class ALWMethodAdapter extends MethodVisitor {
 
 	private String className;
+	private String superName;
 	private String name;
 	private String desc;
 
-	public ALWMethodAdapter(MethodVisitor visitor, String className, String name, String desc) {
+	public ALWMethodAdapter(MethodVisitor visitor, String className, String superName, String name, String desc) {
 		super(Opcodes.ASM4, visitor);
 		this.className = className;
+		this.superName = superName;
 		this.name = name;
 		this.desc = desc;
 	}
@@ -47,6 +49,13 @@ public class ALWMethodAdapter extends MethodVisitor {
 			super.visitInsn(Opcodes.ICONST_1);
 			Main.inneractiveFound = true;
 			return;
+		} else if (("hovr".equals(Main.mode) || "auto".equals(Main.mode))
+				&& "WRAPPER".equals(className) && !this.name.startsWith("startApp")
+				&& name.equals("startApp") && desc.equals("()V")) {
+			System.out.println("WRAPPER real start app found: " + this.name + this.desc);
+			Main.wrapperStartMethod = this.name;
+			opcode = Opcodes.INVOKESPECIAL;
+			owner = superName;
 		}
 		super.visitMethodInsn(opcode, owner, name, desc);
 	}
