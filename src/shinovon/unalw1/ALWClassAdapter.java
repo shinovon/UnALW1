@@ -13,6 +13,10 @@ public class ALWClassAdapter extends ClassVisitor {
 
 	public ALWClassAdapter(ClassVisitor visitor, String name) {
 		super(Opcodes.ASM4, visitor);
+		if (!"alw1".equals(Main.mode) && name.endsWith("VservManager")) {
+			System.out.println("Found VservManager");
+			Main.vservFound = true;
+		}
 		this.className = name;
 	}
 	

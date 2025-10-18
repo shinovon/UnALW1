@@ -20,7 +20,7 @@ public class ALWMethodAdapter extends MethodVisitor {
 	}
 	
 	public void visitInsn(int opcode) {
-		if (className.endsWith("ALW1") && name.equals("startApp") && desc.equals("()V")) {
+		if (!"vserv".equals(Main.mode) && className.endsWith("ALW1") && name.equals("startApp") && desc.equals("()V")) {
 			if (opcode == Opcodes.RETURN) {
 				super.visitVarInsn(Opcodes.ALOAD, 0);
 				super.visitMethodInsn(Opcodes.INVOKEVIRTUAL, className, "startRealApp", "()V");
@@ -29,6 +29,15 @@ public class ALWMethodAdapter extends MethodVisitor {
 			}
 		}
 		super.visitInsn(opcode);
+	}
+	
+	public void visitMethodInsn(int opcode, String owner, String name, String desc) {
+		if (!"alw1".equals(Main.mode) && "javax/microedition/io/Connector".equals(owner)) {
+			System.out.println("Connector call wrapped: " + name + " " + desc + " in " + className + " " + this.name + " " + desc);
+			Main.connectorFound = true;
+			owner = "UnVservConnector";
+		}
+		super.visitMethodInsn(opcode, owner, name, desc);
 	}
 
 }

@@ -6,9 +6,11 @@ package shinovon.unalw1;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 import org.objectweb.asm.*;
@@ -16,32 +18,47 @@ import org.objectweb.asm.*;
 public class Main {
 	
 	public static boolean alw1Found;
+	public static boolean vservFound;
+	public static boolean connectorFound;
+	
+	public static String mode;
 
 	public static void main(String[] args) {
 		
 		if (args.length < 3) {
-			System.out.println("UnALW1 v1.0");
-			System.out.println("by shinovon, 2025");
+			System.out.println("UnALW1 v2.0");
+			System.out.println("J2ME Ad engine removal tool");
+			System.out.println("Supports: ALW1, vServ");
 			System.out.println();
-			System.out.println("Usage:");
-			System.out.println("<injar> <outjar> <proguard.jar> [<library jars>]");
+			System.out.println("Usage: <injar> <outjar> <proguard> <libraryjars> [mode]");
+			System.out.println();
+			System.out.println("Where:");
+			System.out.println(" injar: Path to input jar");
+			System.out.println(" outjar: Path to output jar");
+			System.out.println(" proguard: Path to proguard.jar, e.g: C:\\proguard-7.7.0\\lib\\proguard.jar");
+			System.out.println(" libraryjars: path to folder with MIDP libraries, e.g: C:\\Nokia\\Devices\\S40_5th_Edition_SDK\\lib");
+			System.out.println(" mode: auto/alw1/vserv, auto by default");
+			System.out.println();
+			System.out.println("By shinovon, 2025");
 			return;
 		}
 		
 		String injar = args[0];
 		String outjar = args[1];
 		String proguard = args[2];
-		String libraryjars;
-		if (args.length > 3) {
-			libraryjars = args[3];
-		} else {
-			libraryjars = System.getProperty("java.home") + File.separatorChar + "lib" + File.separatorChar + "rt.jar";
+		String libraryjars = args[3];
+		mode = args.length > 4 ? args[4].toLowerCase() : "auto";
+		
+		if (!"auto".equals(mode) && !"alw1".equals(mode) && !"vserv".equals(mode)) {
+			System.err.println("Invalid mode");
+			System.exit(1);
+			return;
 		}
 		
 		try {
 			File f;
 			outjar = (f = new File(outjar)).getCanonicalPath();
-			if (f.exists()) f.delete();
+//			if (f.exists()) f.delete();
 			proguard = (f = new File(proguard)).getCanonicalPath();
 			if (!f.exists()) {
 				System.err.println("Proguard not found");
@@ -59,32 +76,50 @@ public class Main {
 							ZipEntry entry = entries.nextElement();
 							String name = entry.getName();
 							if (name.endsWith(".class")) {
+								String className = name.substring(0, name.length() - 6);
+								if (className.endsWith("UnVservConnector")) {
+									System.err.println("Jar file appears to be already patched, aborting.");
+									System.exit(1);
+									return;
+								}
 								System.out.println("Transforming " + name);
 								ClassReader classReader = new ClassReader(zipFile.getInputStream(entry));
 								ClassWriter classWriter = new ClassWriter(0);
-								classReader.accept(new ALWClassAdapter(classWriter, name.substring(0, name.length() - 6)), ClassReader.SKIP_DEBUG);
+								classReader.accept(new ALWClassAdapter(classWriter, className), ClassReader.SKIP_DEBUG);
 								
 								zipOut.putNextEntry(new ZipEntry(name));
 								zipOut.write(classWriter.toByteArray());
 								zipOut.closeEntry();
 							} else {
 								System.out.println("Copying " + name);
-								zipOut.putNextEntry(new ZipEntry(entry));
 								try (InputStream in = zipFile.getInputStream(entry)) {
-									int r;
-									byte[] b = new byte[1024];
-									while ((r = in.read(b)) != -1) {
-										zipOut.write(b, 0, r);
-									}
+									zipOut.putNextEntry(new ZipEntry(entry.getName()));
+									write(zipOut, in);
+									zipOut.closeEntry();
+								}
+							}
+						}
+						
+						if (connectorFound) {
+							System.out.println("Adding vServ wrapper classes");
+							try (ZipInputStream zipIn = new ZipInputStream("".getClass().getResourceAsStream("/vserv.jar"))) {
+								ZipEntry entry;
+								while ((entry = zipIn.getNextEntry()) != null) {
+									zipOut.putNextEntry(new ZipEntry(entry.getName()));
+									write(zipOut, zipIn);
+									zipOut.closeEntry();
 								}
 							}
 						}
 					}
 				}
-				if (!alw1Found) {
-					System.err.println("ALW1.startApp() not found, aborting");
-					System.exit(1);
-					return;
+				if (!vservFound && !alw1Found) {
+					if (!connectorFound) {
+						System.err.println("No ad engine was detected, aborting.");
+						System.exit(1);
+						return;
+					}
+					System.err.println("Warning: No ad engine was detected, prooceding anyway..");
 				}
 				System.out.println("Preverifying");
 				
@@ -125,6 +160,14 @@ public class Main {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
+		}
+	}
+	
+	private static void write(OutputStream out, InputStream in) throws Exception {
+		int r;
+		byte[] b = new byte[1024];
+		while ((r = in.read(b)) != -1) {
+			out.write(b, 0, r);
 		}
 	}
 
