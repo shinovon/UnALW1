@@ -165,6 +165,10 @@ public class Main {
 												}
 											}
 										}
+									} else if (Main.alw1Found && mn.name.equals("trialEnd") && mn.desc.equals("()V")) {
+										// alw1: remove trialEnd() code
+										mn.instructions.clear();
+										mn.instructions.add(new InsnNode(Opcodes.RETURN));
 									}
 
 									// renaming

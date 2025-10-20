@@ -5,7 +5,6 @@ package shinovon.unalw1;
 
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
 
 public class ALWMethodAdapter extends MethodVisitor {
 
@@ -32,6 +31,12 @@ public class ALWMethodAdapter extends MethodVisitor {
 				&& name.equals("startApp") && desc.equals("()V")) {
 			if (opcode == Opcodes.RETURN) {
 				// alw1: add this.startRealApp() at the end of startApp()
+				
+				// realAppStarted = 1;
+				super.visitInsn(Opcodes.ICONST_1);
+				super.visitFieldInsn(Opcodes.PUTSTATIC, this.className, "realAppStarted", "I");
+				
+				// this.startRealApp()
 				super.visitVarInsn(Opcodes.ALOAD, 0);
 				super.visitMethodInsn(Opcodes.INVOKEVIRTUAL, className, "startRealApp", "()V");
 				System.out.println("Patched: " + className + '.' + this.name + this.desc);
@@ -88,6 +93,14 @@ public class ALWMethodAdapter extends MethodVisitor {
 			System.out.println("Glomo patched (method 1): " + name + desc + " in " + className + '.' + this.name + this.desc);
 			Main.glomoFound = true;
 			super.visitInsn(Opcodes.POP);
+			return;
+		} else if (("alw1".equals(Main.mode) || "auto".equals(Main.mode))
+				&& (className.endsWith("ALW1") || className.endsWith("ALW2"))
+				&& this.name.equals("startApp") && this.desc.equals("()V")
+				&& opcode == Opcodes.INVOKESPECIAL && name.equals("startApp") && desc.equals("()V")) {
+			// alw1: add return after super.startApp();
+			super.visitMethodInsn(opcode, owner, name, desc);
+			super.visitInsn(Opcodes.RETURN);
 			return;
 		}
 		super.visitMethodInsn(opcode, owner, name, desc);
