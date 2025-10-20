@@ -42,6 +42,7 @@ public class ALWMethodAdapter extends MethodVisitor {
 	}
 	
 	public void visitMethodInsn(int opcode, String owner, String name, String desc) {
+		// TODO handle obfuscated inneractive
 		if (("vserv".equals(Main.mode)
 				|| ("auto".equals(Main.mode) && className.endsWith("VservManager")))
 				&& "javax/microedition/io/Connector".equals(owner)) {
@@ -52,10 +53,17 @@ public class ALWMethodAdapter extends MethodVisitor {
 		} else if (("ia".equals(Main.mode) || "auto".equals(Main.mode))
 				&& ("innerActiveStart".equals(name) || "innerActiveStartGame".equals(name)) && "()Z".equals(desc)) {
 			// ia: remove innerActiveStart calls
-			// TODO handle obfuscated variants
-			System.out.println("Inneractive patched: " + name + desc + " in " + className + '.' + this.name + this.desc);
+			System.out.println("Inneractive patched (method 1): " + name + desc + " in " + className + '.' + this.name + this.desc);
 			super.visitInsn(Opcodes.POP);
 			super.visitInsn(Opcodes.ICONST_1);
+			Main.inneractiveFound = true;
+			return;
+		} else if (("ia".equals(Main.mode) || "auto".equals(Main.mode))
+				&& owner.endsWith("IASDK") && "start".equals(name) && "(Ljavax/microedition/midlet/MIDlet;)B".equals(desc)) {
+			// ia: remove IASDK.start(MIDlet) call
+			System.out.println("Inneractive patched (method 2): " + name + desc + " in " + className + '.' + this.name + this.desc);
+			super.visitInsn(Opcodes.POP);
+			super.visitInsn(Opcodes.ICONST_0);
 			Main.inneractiveFound = true;
 			return;
 		} else if (("hovr".equals(Main.mode) || "auto".equals(Main.mode))
