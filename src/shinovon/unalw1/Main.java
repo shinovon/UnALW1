@@ -8,6 +8,10 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
@@ -24,18 +28,28 @@ public class Main {
 	public static boolean connectorFound;
 	public static boolean inneractiveFound;
 	public static boolean hovrFound;
+	public static boolean freexterFound;
+	
+	public static final String[] modes = {
+			"auto",
+			"alw1",
+			"vserv",
+			"ia",
+			"hovr",
+			"freexter"
+	};
 	
 	public static String mode;
-	public static boolean verbose;
+	public static boolean verbose = true;
 	
-	public static String wrapperStartMethod;
+	static Map<String, ClassNode> classNodes = new HashMap<String, ClassNode>();
 
 	public static void main(String[] args) {
 		
 		if (args.length < 3) {
 			System.out.println("UnALW1 v3.0");
 			System.out.println("J2ME Ad engine removal tool");
-			System.out.println("Supports: ALW1, vServ, InnerActive, Hovr");
+			System.out.println("Supports: ALW1, vServ, InnerActive, Hovr, Freexter");
 			System.out.println();
 			System.out.println("Usage: <injar> <outjar> <proguard> <libraryjars> [mode]");
 			System.out.println();
@@ -44,7 +58,12 @@ public class Main {
 			System.out.println(" outjar: Path to output jar");
 			System.out.println(" proguard: Path to proguard.jar, e.g: C:\\proguard-7.7.0\\lib\\proguard.jar");
 			System.out.println(" libraryjars: path to folder with MIDP libraries, e.g: C:\\Nokia\\Devices\\S40_5th_Edition_SDK\\lib");
-			System.out.println(" mode: auto/alw1/vserv/ia/hovr, auto by default");
+			StringBuilder sb = new StringBuilder(" mode: ");
+			for (String s: modes) {
+				sb.append(s).append('/');
+			}
+			sb.setLength(sb.length() - 1);
+			System.out.println(sb + ", auto by default");
 			System.out.println();
 			System.out.println("By shinovon, 2025");
 			return;
@@ -56,7 +75,12 @@ public class Main {
 		String libraryjars = args[3];
 		mode = args.length > 4 ? args[4].toLowerCase() : "auto";
 		
-		if (!"auto".equals(mode) && !"alw1".equals(mode) && !"vserv".equals(mode) && !"ia".equals(mode) && !"hovr".equals(mode)) {
+		checkMode: {
+			for (String s: modes) {
+				if (s.equalsIgnoreCase(mode)) {
+					break checkMode;
+				}
+			}
 			System.err.println("Invalid mode");
 			System.exit(1);
 			return;
@@ -89,30 +113,29 @@ public class Main {
 									System.exit(1);
 									return;
 								}
-								if (className.equals("WRAPPER")) {
-									ClassReader classReader = new ClassReader(zipFile.getInputStream(entry));
-									ClassNode node = new ClassNode();
-									classReader.accept(new ALWClassAdapter(node, className), ClassReader.SKIP_DEBUG);
-									for (Object m : node.methods) {
-										MethodNode mn = (MethodNode) m;
-										if (wrapperStartMethod.equals(mn.name)) {
-											mn.name = "startApp";
+								if (verbose) System.out.println("Transforming " + name);
+								
+								ClassReader classReader = new ClassReader(zipFile.getInputStream(entry));
+								ClassNode node = new ClassNode();
+								ALWClassAdapter adapter = new ALWClassAdapter(node, className);
+								classReader.accept(adapter, ClassReader.SKIP_DEBUG);
+								
+								List<String[]> renameMethods = adapter.getRenameList();
+								for (Object m : node.methods) {
+									MethodNode mn = (MethodNode) m;
+
+									if (renameMethods != null) {
+										for (String[] s : renameMethods) {
+											if (s[0].equals(mn.name) && s[1].equals(mn.desc)) {
+												System.out.println("Renaming " + className + "." + mn.name + mn.desc + " -> " + s[2]);
+												mn.name = s[2];
+												break;
+											}
 										}
 									}
-									ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
-									node.accept(classWriter);
-									zipOut.putNextEntry(new ZipEntry(name));
-									zipOut.write(classWriter.toByteArray());
-									zipOut.closeEntry();
-									continue;
 								}
-								if (verbose) System.out.println("Transforming " + name);
-								ClassReader classReader = new ClassReader(zipFile.getInputStream(entry));
-								ClassWriter classWriter = new ClassWriter(0);
-								classReader.accept(new ALWClassAdapter(classWriter, className), ClassReader.SKIP_DEBUG);
-								zipOut.putNextEntry(new ZipEntry(name));
-								zipOut.write(classWriter.toByteArray());
-								zipOut.closeEntry();
+								
+								classNodes.put(className, node);
 							} else {
 								if (verbose) System.out.println("Copying " + name);
 								try (InputStream in = zipFile.getInputStream(entry)) {
@@ -121,6 +144,15 @@ public class Main {
 									zipOut.closeEntry();
 								}
 							}
+						}
+						
+						for (Entry<String, ClassNode> entry : classNodes.entrySet()) {
+							if (verbose) System.out.println("Writing " + entry.getKey());
+							ClassWriter classWriter = new ClassWriter(0);
+							entry.getValue().accept(classWriter);
+							zipOut.putNextEntry(new ZipEntry(entry.getKey() + ".class"));
+							zipOut.write(classWriter.toByteArray());
+							zipOut.closeEntry();
 						}
 						
 						if (connectorFound) {
@@ -138,7 +170,7 @@ public class Main {
 						}
 					}
 				}
-				if (!vservFound && !alw1Found && !inneractiveFound && !hovrFound) {
+				if (!vservFound && !alw1Found && !inneractiveFound && !hovrFound && !freexterFound) {
 					if (!connectorFound) {
 						System.err.println("No ad engine was detected, aborting.");
 						System.exit(1);

@@ -8,13 +8,15 @@ import org.objectweb.asm.Opcodes;
 
 public class ALWMethodAdapter extends MethodVisitor {
 
+	private ALWClassAdapter classAdapter;
 	private String className;
 	private String superName;
 	private String name;
 	private String desc;
 
-	public ALWMethodAdapter(MethodVisitor visitor, String className, String superName, String name, String desc) {
+	public ALWMethodAdapter(ALWClassAdapter classAdapter, MethodVisitor visitor, String className, String superName, String name, String desc) {
 		super(Opcodes.ASM4, visitor);
+		this.classAdapter = classAdapter;
 		this.className = className;
 		this.superName = superName;
 		this.name = name;
@@ -53,7 +55,11 @@ public class ALWMethodAdapter extends MethodVisitor {
 				&& "WRAPPER".equals(className) && !this.name.startsWith("startApp")
 				&& name.equals("startApp") && desc.equals("()V")) {
 			System.out.println("WRAPPER real start app found: " + this.name + this.desc);
-			Main.wrapperStartMethod = this.name;
+			classAdapter.renameMethod(this.name, this.desc, "startApp");
+			opcode = Opcodes.INVOKESPECIAL;
+			owner = superName;
+		} else if (Main.freexterFound && "destroyApp".equals(this.name) && "(Z)V".equals(this.desc)
+				 && "destroyApp".equals(name) && "(Z)V".equals(desc)) {
 			opcode = Opcodes.INVOKESPECIAL;
 			owner = superName;
 		}
