@@ -18,17 +18,14 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 import org.objectweb.asm.*;
+import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.InsnNode;
+import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
 public class Main {
-	
-	public static boolean alw1Found;
-	public static boolean vservFound;
-	public static boolean connectorFound;
-	public static boolean inneractiveFound;
-	public static boolean hovrFound;
-	public static boolean freexterFound;
 	
 	public static final String[] modes = {
 			"auto",
@@ -36,11 +33,26 @@ public class Main {
 			"vserv",
 			"ia",
 			"hovr",
-			"freexter"
+			"freexter",
+			"gs",
 	};
 	
 	public static String mode;
 	public static boolean verbose = true;
+	
+	public static boolean alw1Found;
+	public static boolean vservFound;
+	public static boolean connectorFound;
+	public static boolean inneractiveFound;
+	public static boolean hovrFound;
+	public static boolean freexterFound;
+	public static boolean greystripeFound;
+	
+	// greystripe
+	public static String greystripeClass;
+	public static String greystripeStartFunc;
+	public static String greystripeCheckFunc;
+	public static boolean hasGsid;
 	
 	static Map<String, ClassNode> classNodes = new HashMap<String, ClassNode>();
 
@@ -49,7 +61,7 @@ public class Main {
 		if (args.length < 3) {
 			System.out.println("UnALW1 v3.0");
 			System.out.println("J2ME Ad engine removal tool");
-			System.out.println("Supports: ALW1, vServ, InnerActive, Hovr, Freexter");
+			System.out.println("Supports: ALW1, vServ, InnerActive, Hovr, Freexter, Greystripe");
 			System.out.println();
 			System.out.println("Usage: <injar> <outjar> <proguard> <libraryjars> [mode]");
 			System.out.println();
@@ -101,6 +113,10 @@ public class Main {
 			temp.deleteOnExit();
 			try {
 				try (ZipFile zipFile = new ZipFile(injar)) {
+					if ("gs".equals(Main.mode) || "auto".equals(Main.mode)) {
+						hasGsid = zipFile.getEntry(".gsid") != null;
+					}
+					
 					try (ZipOutputStream zipOut = new ZipOutputStream(new FileOutputStream(temp))) {
 						Enumeration<? extends ZipEntry> entries = zipFile.entries();
 						while (entries.hasMoreElements()) {
@@ -123,6 +139,22 @@ public class Main {
 								List<String[]> renameMethods = adapter.getRenameList();
 								for (Object m : node.methods) {
 									MethodNode mn = (MethodNode) m;
+									
+									if (greystripeClass != null && greystripeClass.equals(className)) {
+										if (mn.desc.equals("()V") && mn.name.equals(greystripeStartFunc)) {
+											InsnList ins = mn.instructions;
+											for (AbstractInsnNode n = ins.getFirst(); n != null; n = n.getNext()) {
+												if (n instanceof MethodInsnNode && ((MethodInsnNode)n).desc.equals("()Z") && ((MethodInsnNode) n).name.equals(greystripeCheckFunc)) {
+													ins.remove(n.getPrevious());
+													ins.set(n, new InsnNode(Opcodes.ICONST_1));
+													
+													System.out.println("Greystripe patched: " + greystripeClass + '.' + greystripeStartFunc + "()V");
+													greystripeFound = true;
+													break;
+												}
+											}
+										}
+									}
 
 									if (renameMethods != null) {
 										for (String[] s : renameMethods) {
@@ -170,7 +202,12 @@ public class Main {
 						}
 					}
 				}
-				if (!vservFound && !alw1Found && !inneractiveFound && !hovrFound && !freexterFound) {
+				if (!vservFound
+						&& !alw1Found
+						&& !inneractiveFound
+						&& !hovrFound
+						&& !freexterFound
+						&& !greystripeFound) {
 					if (!connectorFound) {
 						System.err.println("No ad engine was detected, aborting.");
 						System.exit(1);

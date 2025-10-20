@@ -5,6 +5,7 @@ package shinovon.unalw1;
 
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 
 public class ALWMethodAdapter extends MethodVisitor {
 
@@ -13,6 +14,8 @@ public class ALWMethodAdapter extends MethodVisitor {
 	private String superName;
 	private String name;
 	private String desc;
+	
+	private int greystripeCheck;
 
 	public ALWMethodAdapter(ALWClassAdapter classAdapter, MethodVisitor visitor, String className, String superName, String name, String desc) {
 		super(Opcodes.ASM4, visitor);
@@ -64,6 +67,28 @@ public class ALWMethodAdapter extends MethodVisitor {
 			owner = superName;
 		}
 		super.visitMethodInsn(opcode, owner, name, desc);
+	}
+	
+	public void visitLdcInsn(Object cst) {
+		if (Main.hasGsid && this.className.indexOf('/') != -1 && this.desc.equals("()V")
+				&& cst instanceof String && cst.equals("Connection failed")) {
+				System.out.println("Greystripe start function found: " + this.className + '.' + this.name + this.desc);
+				Main.greystripeStartFunc = this.name;
+		}
+		super.visitLdcInsn(cst);
+	}
+	
+	public void visitIntInsn(int opcode, int operand) {
+		if (opcode == Opcodes.SIPUSH && Main.hasGsid && this.desc.equals("()Z") && this.className.indexOf('/') != -1) {
+			if (operand == 10004 && greystripeCheck == 10002) {
+				System.out.println("Greystripe check function found: " + this.className + '.' + this.name + this.desc);
+				Main.greystripeClass = this.className;
+				Main.greystripeCheckFunc = this.name;
+			} else {
+				greystripeCheck = operand;
+			}
+		}
+		super.visitIntInsn(opcode, operand);
 	}
 
 }
