@@ -9,5 +9,5 @@ Currently supports:
 - Inneractive (not all vendors/games)
 - Hovr
 - Freexter
-- Greystripes (partially)
+- Greystripe (partially)
 - Glomo (not all vendors/games)
