@@ -117,6 +117,7 @@ public class Main {
 			try {
 				try (ZipFile zipFile = new ZipFile(injar)) {
 					if ("gs".equals(Main.mode) || "auto".equals(Main.mode)) {
+						// greystripe: check for .gsid resource
 						hasGsid = zipFile.getEntry(".gsid") != null || zipFile.getEntry("/.gsid") != null;
 					}
 					
@@ -139,15 +140,20 @@ public class Main {
 								ALWClassAdapter adapter = new ALWClassAdapter(node, className);
 								classReader.accept(adapter, ClassReader.SKIP_DEBUG);
 								
+								// process nodes after class adapter
 								List<String[]> renameMethods = adapter.getRenameList();
 								for (Object m : node.methods) {
 									MethodNode mn = (MethodNode) m;
 									
+									// greystripe method 1
 									if (greystripeConnectionClass != null && greystripeConnectionClass.equals(className)) {
 										if (mn.desc.equals("()V") && mn.name.equals(greystripeStartFunc)) {
 											InsnList ins = mn.instructions;
 											for (AbstractInsnNode n = ins.getFirst(); n != null; n = n.getNext()) {
-												if (n instanceof MethodInsnNode && ((MethodInsnNode)n).desc.equals("()Z") && ((MethodInsnNode) n).name.equals(greystripeCheckFunc)) {
+												if (n instanceof MethodInsnNode
+														&& ((MethodInsnNode)n).desc.equals("()Z") && ((MethodInsnNode) n).name.equals(greystripeCheckFunc)) {
+													// remove connection check
+													// if (!a()) return; -> if (!true) return;
 													ins.remove(n.getPrevious());
 													ins.set(n, new InsnNode(Opcodes.ICONST_1));
 													
@@ -159,6 +165,7 @@ public class Main {
 										}
 									}
 
+									// renaming
 									if (renameMethods != null) {
 										for (String[] s : renameMethods) {
 											if (s[0].equals(mn.name) && s[1].equals(mn.desc)) {
@@ -181,10 +188,12 @@ public class Main {
 							}
 						}
 						
+						// write nodes
 						for (Entry<String, ClassNode> entry : classNodes.entrySet()) {
 							ClassNode node = entry.getValue();
 							String className = entry.getKey();
 							
+							// greystripe method 2
 							if (greystripeRunnerClass != null && className.equals(greystripeRunnerClass)) {
 								if (!node.interfaces.contains("java/lang/Runnable") || node.interfaces.size() != 1) {
 									greystripeRunnerClass = null;
@@ -196,6 +205,7 @@ public class Main {
 
 										InsnList ins = mn.instructions;
 										for (AbstractInsnNode n : ins.toArray()) {
+											// remove everything until getstatic MIDlet is found
 											if (n.getOpcode() == Opcodes.GETSTATIC && !"Z".equals(((FieldInsnNode) n).desc)) {
 												System.out.println("Greystripe patched (method 2): " + greystripeRunnerClass);
 												greystripeFound2 = true;
@@ -217,6 +227,7 @@ public class Main {
 							zipOut.closeEntry();
 						}
 						
+						// add unvserv connector classes
 						if (connectorFound) {
 							System.out.println("Adding vServ wrapper classes");
 							try (ZipInputStream zipIn = new ZipInputStream("".getClass().getResourceAsStream("/vserv.jar"))) {
@@ -252,8 +263,9 @@ public class Main {
 					}
 					System.err.println("Warning: No ad engine was detected, prooceding anyway..");
 				}
-				System.out.println("Preverifying");
 				
+				// preverify with proguard
+				System.out.println("Preverifying");
 				ProcessBuilder builder = new ProcessBuilder(
 						new String[] {
 						System.getProperty("java.home") + File.separatorChar + "bin" + File.separatorChar + "java",

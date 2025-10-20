@@ -31,6 +31,7 @@ public class ALWMethodAdapter extends MethodVisitor {
 				&& (className.endsWith("ALW1") || className.endsWith("ALW2"))
 				&& name.equals("startApp") && desc.equals("()V")) {
 			if (opcode == Opcodes.RETURN) {
+				// alw1: add this.startRealApp() at the end of startApp()
 				super.visitVarInsn(Opcodes.ALOAD, 0);
 				super.visitMethodInsn(Opcodes.INVOKEVIRTUAL, className, "startRealApp", "()V");
 				System.out.println("Patched: " + className + '.' + this.name + this.desc);
@@ -44,11 +45,13 @@ public class ALWMethodAdapter extends MethodVisitor {
 		if (("vserv".equals(Main.mode)
 				|| ("auto".equals(Main.mode) && className.endsWith("VservManager")))
 				&& "javax/microedition/io/Connector".equals(owner)) {
+			// vserv: wrap connector static calls
 			System.out.println("Connector call wrapped: " + name + desc + " in " + className + '.' + this.name + this.desc);
 			Main.connectorFound = true;
 			owner = "UnVservConnector";
 		} else if (("ia".equals(Main.mode) || "auto".equals(Main.mode))
 				&& ("innerActiveStart".equals(name) || "innerActiveStartGame".equals(name)) && "()Z".equals(desc)) {
+			// ia: remove innerActiveStart calls
 			System.out.println("Inneractive patched: " + name + desc + " in " + className + '.' + this.name + this.desc);
 			super.visitInsn(Opcodes.POP);
 			super.visitInsn(Opcodes.ICONST_1);
@@ -57,12 +60,14 @@ public class ALWMethodAdapter extends MethodVisitor {
 		} else if (("hovr".equals(Main.mode) || "auto".equals(Main.mode))
 				&& "WRAPPER".equals(className) && !this.name.startsWith("startApp")
 				&& name.equals("startApp") && desc.equals("()V")) {
+			// hovr: rename internal start app to startApp
 			System.out.println("WRAPPER real start app found: " + this.name + this.desc);
 			classAdapter.renameMethod(this.name, this.desc, "startApp");
 			opcode = Opcodes.INVOKESPECIAL;
 			owner = superName;
 		} else if (Main.freexterFound && "destroyApp".equals(this.name) && "(Z)V".equals(this.desc)
 				 && "destroyApp".equals(name) && "(Z)V".equals(desc)) {
+			// freexter: this.destroyApp() -> super.destroyApp
 			opcode = Opcodes.INVOKESPECIAL;
 			owner = superName;
 		} else if (opcode == Opcodes.INVOKEVIRTUAL && Main.hasGsid && "startApp".equals(this.name) && "()V".equals(this.desc) && desc.equals("()V")) {
@@ -74,14 +79,16 @@ public class ALWMethodAdapter extends MethodVisitor {
 	public void visitLdcInsn(Object cst) {
 		if (Main.hasGsid && this.className.indexOf('/') != -1 && this.desc.equals("()V")
 				&& cst instanceof String && cst.equals("Connection failed")) {
-				System.out.println("Greystripe start function found: " + this.className + '.' + this.name + this.desc);
-				Main.greystripeStartFunc = this.name;
+			// greystripe: find start function by exception message "Connection failed"
+			System.out.println("Greystripe start function found: " + this.className + '.' + this.name + this.desc);
+			Main.greystripeStartFunc = this.name;
 		}
 		super.visitLdcInsn(cst);
 	}
 	
 	public void visitIntInsn(int opcode, int operand) {
 		if (opcode == Opcodes.SIPUSH && Main.hasGsid && this.desc.equals("()Z") && this.className.indexOf('/') != -1) {
+			// greystripe: find connection check function by magic numbers sequence 10002, 10004
 			if (operand == 10004 && greystripeCheck == 10002) {
 				System.out.println("Greystripe check function found: " + this.className + '.' + this.name + this.desc);
 				Main.greystripeConnectionClass = this.className;
