@@ -52,6 +52,7 @@ public class ALWMethodAdapter extends MethodVisitor {
 		} else if (("ia".equals(Main.mode) || "auto".equals(Main.mode))
 				&& ("innerActiveStart".equals(name) || "innerActiveStartGame".equals(name)) && "()Z".equals(desc)) {
 			// ia: remove innerActiveStart calls
+			// TODO handle obfuscated variants
 			System.out.println("Inneractive patched: " + name + desc + " in " + className + '.' + this.name + this.desc);
 			super.visitInsn(Opcodes.POP);
 			super.visitInsn(Opcodes.ICONST_1);
@@ -72,9 +73,11 @@ public class ALWMethodAdapter extends MethodVisitor {
 			owner = superName;
 		} else if (opcode == Opcodes.INVOKEVIRTUAL && Main.hasGsid && "startApp".equals(this.name) && "()V".equals(this.desc) && desc.equals("()V")) {
 			Main.greystripeRunnerClass = owner;
-		} else if (("ia".equals(Main.mode) || "auto".equals(Main.mode))
+		} else if (("glomo".equals(Main.mode) || "auto".equals(Main.mode))
 				&& opcode == Opcodes.INVOKESTATIC && owner.endsWith("RegStarter") && "start".equals(name) && desc.endsWith(")V")) {
-			System.out.println("Glomo patched: " + name + desc + " in " + className + '.' + this.name + this.desc);
+			// glomo: remove RegStarter.start(MIDlet) static call
+			// TODO net lizard
+			System.out.println("Glomo patched (method 1): " + name + desc + " in " + className + '.' + this.name + this.desc);
 			Main.glomoFound = true;
 			super.visitInsn(Opcodes.POP);
 			return;
