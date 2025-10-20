@@ -20,6 +20,7 @@ import java.util.zip.ZipOutputStream;
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
@@ -38,7 +39,7 @@ public class Main {
 	};
 	
 	public static String mode;
-	public static boolean verbose = true;
+	public static boolean verbose = false;
 	
 	public static boolean alw1Found;
 	public static boolean vservFound;
@@ -46,10 +47,12 @@ public class Main {
 	public static boolean inneractiveFound;
 	public static boolean hovrFound;
 	public static boolean freexterFound;
-	public static boolean greystripeFound;
+	public static boolean greystripeFound1;
+	public static boolean greystripeFound2;
 	
 	// greystripe
-	public static String greystripeClass;
+	public static String greystripeConnectionClass;
+	public static String greystripeRunnerClass;
 	public static String greystripeStartFunc;
 	public static String greystripeCheckFunc;
 	public static boolean hasGsid;
@@ -114,7 +117,7 @@ public class Main {
 			try {
 				try (ZipFile zipFile = new ZipFile(injar)) {
 					if ("gs".equals(Main.mode) || "auto".equals(Main.mode)) {
-						hasGsid = zipFile.getEntry(".gsid") != null;
+						hasGsid = zipFile.getEntry(".gsid") != null || zipFile.getEntry("/.gsid") != null;
 					}
 					
 					try (ZipOutputStream zipOut = new ZipOutputStream(new FileOutputStream(temp))) {
@@ -140,7 +143,7 @@ public class Main {
 								for (Object m : node.methods) {
 									MethodNode mn = (MethodNode) m;
 									
-									if (greystripeClass != null && greystripeClass.equals(className)) {
+									if (greystripeConnectionClass != null && greystripeConnectionClass.equals(className)) {
 										if (mn.desc.equals("()V") && mn.name.equals(greystripeStartFunc)) {
 											InsnList ins = mn.instructions;
 											for (AbstractInsnNode n = ins.getFirst(); n != null; n = n.getNext()) {
@@ -148,8 +151,8 @@ public class Main {
 													ins.remove(n.getPrevious());
 													ins.set(n, new InsnNode(Opcodes.ICONST_1));
 													
-													System.out.println("Greystripe patched: " + greystripeClass + '.' + greystripeStartFunc + "()V");
-													greystripeFound = true;
+													System.out.println("Greystripe patched (method 1): " + greystripeConnectionClass + '.' + greystripeStartFunc + "()V");
+													greystripeFound1 = true;
 													break;
 												}
 											}
@@ -179,10 +182,37 @@ public class Main {
 						}
 						
 						for (Entry<String, ClassNode> entry : classNodes.entrySet()) {
-							if (verbose) System.out.println("Writing " + entry.getKey());
+							ClassNode node = entry.getValue();
+							String className = entry.getKey();
+							
+							if (greystripeRunnerClass != null && className.equals(greystripeRunnerClass)) {
+								if (!node.interfaces.contains("java/lang/Runnable") || node.interfaces.size() != 1) {
+									greystripeRunnerClass = null;
+								} else {
+									for (Object m : node.methods) {
+										MethodNode mn = (MethodNode) m;
+										if (!mn.name.equals("run") || !mn.desc.equals("()V"))
+											continue;
+
+										InsnList ins = mn.instructions;
+										for (AbstractInsnNode n : ins.toArray()) {
+											if (n.getOpcode() == Opcodes.GETSTATIC && !"Z".equals(((FieldInsnNode) n).desc)) {
+												System.out.println("Greystripe patched (method 2): " + greystripeRunnerClass);
+												greystripeFound2 = true;
+												break;
+											}
+											ins.remove(n);
+										}
+										break;
+									}
+								}
+							}
+							
+							if (verbose) System.out.println("Writing " + className);
+
 							ClassWriter classWriter = new ClassWriter(0);
-							entry.getValue().accept(classWriter);
-							zipOut.putNextEntry(new ZipEntry(entry.getKey() + ".class"));
+							node.accept(classWriter);
+							zipOut.putNextEntry(new ZipEntry(className + ".class"));
 							zipOut.write(classWriter.toByteArray());
 							zipOut.closeEntry();
 						}
@@ -202,13 +232,20 @@ public class Main {
 						}
 					}
 				}
-				if (!vservFound
+
+				if (greystripeFound1) {
+					System.out.println("Warning: Greystripe may be unwrapped partially");
+				} else if (!vservFound
 						&& !alw1Found
 						&& !inneractiveFound
 						&& !hovrFound
 						&& !freexterFound
-						&& !greystripeFound) {
-					if (!connectorFound) {
+						&& !greystripeFound2) {
+					if (hasGsid) {
+						System.err.println("Greystripe was detected, but could not unwrap it");
+						System.exit(1);
+						return;
+					} else if (!connectorFound) {
 						System.err.println("No ad engine was detected, aborting.");
 						System.exit(1);
 						return;

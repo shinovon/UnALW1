@@ -65,6 +65,8 @@ public class ALWMethodAdapter extends MethodVisitor {
 				 && "destroyApp".equals(name) && "(Z)V".equals(desc)) {
 			opcode = Opcodes.INVOKESPECIAL;
 			owner = superName;
+		} else if (opcode == Opcodes.INVOKEVIRTUAL && Main.hasGsid && "startApp".equals(this.name) && "()V".equals(this.desc) && desc.equals("()V")) {
+			Main.greystripeRunnerClass = owner;
 		}
 		super.visitMethodInsn(opcode, owner, name, desc);
 	}
@@ -82,7 +84,7 @@ public class ALWMethodAdapter extends MethodVisitor {
 		if (opcode == Opcodes.SIPUSH && Main.hasGsid && this.desc.equals("()Z") && this.className.indexOf('/') != -1) {
 			if (operand == 10004 && greystripeCheck == 10002) {
 				System.out.println("Greystripe check function found: " + this.className + '.' + this.name + this.desc);
-				Main.greystripeClass = this.className;
+				Main.greystripeConnectionClass = this.className;
 				Main.greystripeCheckFunc = this.name;
 			} else {
 				greystripeCheck = operand;
