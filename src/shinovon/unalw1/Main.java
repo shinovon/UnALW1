@@ -64,7 +64,7 @@ public class Main {
 	public static void main(String[] args) {
 		
 		if (args.length < 3) {
-			System.out.println("UnALW1 v3.0");
+			System.out.println("UnALW1 v4.0");
 			System.out.println("J2ME Ad engine removal tool");
 			System.out.println("Supports: ALW1, vServ, InnerActive, Hovr, Freexter, Greystripe, Glomo");
 			System.out.println();
@@ -167,6 +167,7 @@ public class Main {
 										}
 									} else if (Main.alw1Found && mn.name.equals("trialEnd") && mn.desc.equals("()V")) {
 										// alw1: remove trialEnd() code
+										System.out.println("Patched ALW1: " + className + '.' + mn.name + mn.desc);
 										mn.instructions.clear();
 										mn.instructions.add(new InsnNode(Opcodes.RETURN));
 									}

@@ -39,7 +39,7 @@ public class ALWMethodAdapter extends MethodVisitor {
 				// this.startRealApp()
 				super.visitVarInsn(Opcodes.ALOAD, 0);
 				super.visitMethodInsn(Opcodes.INVOKEVIRTUAL, className, "startRealApp", "()V");
-				System.out.println("Patched: " + className + '.' + this.name + this.desc);
+				System.out.println("Patched ALW1: " + className + '.' + this.name + this.desc);
 				Main.alw1Found = true;
 			}
 		}
