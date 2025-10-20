@@ -36,6 +36,7 @@ public class Main {
 			"hovr",
 			"freexter",
 			"gs",
+			"glomo",
 	};
 	
 	public static String mode;
@@ -49,6 +50,7 @@ public class Main {
 	public static boolean freexterFound;
 	public static boolean greystripeFound1;
 	public static boolean greystripeFound2;
+	public static boolean glomoFound;
 	
 	// greystripe
 	public static String greystripeConnectionClass;
@@ -64,7 +66,7 @@ public class Main {
 		if (args.length < 3) {
 			System.out.println("UnALW1 v3.0");
 			System.out.println("J2ME Ad engine removal tool");
-			System.out.println("Supports: ALW1, vServ, InnerActive, Hovr, Freexter, Greystripe");
+			System.out.println("Supports: ALW1, vServ, InnerActive, Hovr, Freexter, Greystripe, Glomo");
 			System.out.println();
 			System.out.println("Usage: <injar> <outjar> <proguard> <libraryjars> [mode]");
 			System.out.println();
@@ -251,7 +253,8 @@ public class Main {
 						&& !inneractiveFound
 						&& !hovrFound
 						&& !freexterFound
-						&& !greystripeFound2) {
+						&& !greystripeFound2
+						&& !glomoFound) {
 					if (hasGsid) {
 						System.err.println("Greystripe was detected, but could not unwrap it");
 						System.exit(1);

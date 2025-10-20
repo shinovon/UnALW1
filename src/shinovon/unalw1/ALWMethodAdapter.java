@@ -72,6 +72,12 @@ public class ALWMethodAdapter extends MethodVisitor {
 			owner = superName;
 		} else if (opcode == Opcodes.INVOKEVIRTUAL && Main.hasGsid && "startApp".equals(this.name) && "()V".equals(this.desc) && desc.equals("()V")) {
 			Main.greystripeRunnerClass = owner;
+		} else if (("ia".equals(Main.mode) || "auto".equals(Main.mode))
+				&& opcode == Opcodes.INVOKESTATIC && owner.endsWith("RegStarter") && "start".equals(name) && desc.endsWith(")V")) {
+			System.out.println("Glomo patched: " + name + desc + " in " + className + '.' + this.name + this.desc);
+			Main.glomoFound = true;
+			super.visitInsn(Opcodes.POP);
+			return;
 		}
 		super.visitMethodInsn(opcode, owner, name, desc);
 	}
