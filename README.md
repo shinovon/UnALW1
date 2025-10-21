@@ -1,7 +1,7 @@
 # UnALW1
 Tool for removing ad and payment engines from J2ME games
 
-![image](unalw.png)
+![image](prev.png)
 
 Currently supports:
 - ALW1/ALW2
