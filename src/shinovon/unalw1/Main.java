@@ -67,6 +67,7 @@ public class Main implements Runnable {
 			"freexter",
 			"gs",
 			"glomo",
+			"sms",
 	};
 	
 	public static final String[] modeNames = {
@@ -78,6 +79,7 @@ public class Main implements Runnable {
 			"Freexter",
 			"Greystripe",
 			"Glomo",
+			"SMS",
 	};
 	
 	static Main inst;
@@ -91,6 +93,7 @@ public class Main implements Runnable {
 	public boolean greystripePatched1;
 	public boolean greystripePatched2;
 	public boolean glomoPatched;
+	public boolean smsPatched;
 	public boolean vservContextFound;
 	
 	// greystripe
@@ -448,7 +451,8 @@ public class Main implements Runnable {
 							&& !hovrPatched
 							&& !freexterPatched
 							&& !greystripePatched2
-							&& !glomoPatched) {
+							&& !glomoPatched
+							&& !smsPatched) {
 						if (hasGsid) {
 							logError("Greystripe was detected, but could not patch it, please report to developer!", false);
 							failed = true;
@@ -668,6 +672,22 @@ public class Main implements Runnable {
 			public void actionPerformed(ActionEvent e) {
 				if (running) return;
 				target = inField.getText();
+				String s = outField.getText();
+				try {
+					if (s.trim().isEmpty()) {
+						outdir = null;
+						outjar = null;
+					} else {
+						File f = new File(s);
+						if (f.isDirectory()) {
+							outdir = s;
+							outjar = null;
+						} else {
+							outdir = null;
+							outjar = s;
+						}
+					}
+				} catch (Exception ignored) {}
 				proguard = proguardField.getText();
 				libraryjars = libField.getText();
 				mode = modes[comboBox.getSelectedIndex()];

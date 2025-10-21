@@ -103,6 +103,14 @@ public class ALWMethodAdapter extends MethodVisitor {
 			super.visitMethodInsn(opcode, owner, name, desc);
 			super.visitInsn(Opcodes.RETURN);
 			return;
+		} else if (("sms".equals(Main.inst.mode) || "auto".equals(Main.inst.mode))
+				&& owner.equals("javax/wireless/messaging/MessageConnection") && name.equals("send")) {
+			// remove sms send
+			Main.inst.log("Patched SMS send: " + name + desc + " in " + className + '.' + this.name + this.desc);
+			Main.inst.smsPatched = true;
+			super.visitInsn(Opcodes.POP);
+			super.visitInsn(Opcodes.POP);
+			return;
 		}
 		super.visitMethodInsn(opcode, owner, name, desc);
 	}
