@@ -40,7 +40,7 @@ public class ALWMethodAdapter extends MethodVisitor {
 				super.visitVarInsn(Opcodes.ALOAD, 0);
 				super.visitMethodInsn(Opcodes.INVOKEVIRTUAL, className, "startRealApp", "()V");
 				Main.inst.log("Patched ALW1: " + className + '.' + this.name + this.desc);
-				Main.inst.alw1Found = true;
+				Main.inst.alw1Patched = true;
 			}
 		}
 		super.visitInsn(opcode);
@@ -49,11 +49,11 @@ public class ALWMethodAdapter extends MethodVisitor {
 	public void visitMethodInsn(int opcode, String owner, String name, String desc) {
 		// TODO handle obfuscated inneractive
 		if (("vserv".equals(Main.inst.mode)
-				|| ("auto".equals(Main.inst.mode) && className.endsWith("VservManager")))
+				|| ("auto".equals(Main.inst.mode) && (className.endsWith("VservManager") || className.endsWith("VservAd"))))
 				&& "javax/microedition/io/Connector".equals(owner)) {
 			// vserv: wrap connector static calls
 			Main.inst.log("Connector call wrapped: " + name + desc + " in " + className + '.' + this.name + this.desc);
-			Main.inst.connectorFound = true;
+			Main.inst.connectorPatched = true;
 			owner = "UnVservConnector";
 		} else if (("ia".equals(Main.inst.mode) || "auto".equals(Main.inst.mode))
 				&& ("innerActiveStart".equals(name) || "innerActiveStartGame".equals(name)) && "()Z".equals(desc)) {
@@ -61,7 +61,7 @@ public class ALWMethodAdapter extends MethodVisitor {
 			Main.inst.log("Inneractive patched (method 1): " + name + desc + " in " + className + '.' + this.name + this.desc);
 			super.visitInsn(Opcodes.POP);
 			super.visitInsn(Opcodes.ICONST_1);
-			Main.inst.inneractiveFound = true;
+			Main.inst.inneractivePatched = true;
 			return;
 		} else if (("ia".equals(Main.inst.mode) || "auto".equals(Main.inst.mode))
 				&& owner.endsWith("IASDK") && "start".equals(name) && "(Ljavax/microedition/midlet/MIDlet;)B".equals(desc)) {
@@ -69,7 +69,7 @@ public class ALWMethodAdapter extends MethodVisitor {
 			Main.inst.log("Inneractive patched (method 2): " + name + desc + " in " + className + '.' + this.name + this.desc);
 			super.visitInsn(Opcodes.POP);
 			super.visitInsn(Opcodes.ICONST_0);
-			Main.inst.inneractiveFound = true;
+			Main.inst.inneractivePatched = true;
 			return;
 		} else if (("hovr".equals(Main.inst.mode) || "auto".equals(Main.inst.mode))
 				&& "WRAPPER".equals(className) && !this.name.startsWith("startApp")
@@ -79,7 +79,7 @@ public class ALWMethodAdapter extends MethodVisitor {
 			classAdapter.renameMethod(this.name, this.desc, "startApp");
 			opcode = Opcodes.INVOKESPECIAL;
 			owner = superName;
-		} else if (Main.inst.freexterFound && "destroyApp".equals(this.name) && "(Z)V".equals(this.desc)
+		} else if (Main.inst.freexterPatched && "destroyApp".equals(this.name) && "(Z)V".equals(this.desc)
 				 && "destroyApp".equals(name) && "(Z)V".equals(desc)) {
 			// freexter: this.destroyApp() -> super.destroyApp
 			opcode = Opcodes.INVOKESPECIAL;
@@ -91,7 +91,7 @@ public class ALWMethodAdapter extends MethodVisitor {
 			// glomo: remove RegStarter.start(MIDlet) static call
 			// TODO net lizard
 			Main.inst.log("Glomo patched (method 1): " + name + desc + " in " + className + '.' + this.name + this.desc);
-			Main.inst.glomoFound = true;
+			Main.inst.glomoPatched = true;
 			super.visitInsn(Opcodes.POP);
 			return;
 		} else if (("alw1".equals(Main.inst.mode) || "auto".equals(Main.inst.mode))
@@ -112,6 +112,9 @@ public class ALWMethodAdapter extends MethodVisitor {
 			// greystripe: find start function by exception message "Connection failed"
 			Main.inst.log("Greystripe start function found: " + this.className + '.' + this.name + this.desc);
 			Main.inst.greystripeStartFunc = this.name;
+		} else if (cst instanceof String && cst.equals("X-VSERV-CONTEXT")) {
+			Main.inst.log("vServ string constant found: " + this.className + '.' + this.name + this.desc);
+			Main.inst.vservContextFound = true;
 		}
 		super.visitLdcInsn(cst);
 	}

@@ -48,15 +48,16 @@ public class Main implements Runnable {
 	static Main inst;
 	
 	// state
-	public boolean alw1Found;
-	public boolean vservFound;
-	public boolean connectorFound;
-	public boolean inneractiveFound;
-	public boolean hovrFound;
-	public boolean freexterFound;
-	public boolean greystripeFound1;
-	public boolean greystripeFound2;
-	public boolean glomoFound;
+	public boolean alw1Patched;
+	public boolean vservPatched;
+	public boolean connectorPatched;
+	public boolean inneractivePatched;
+	public boolean hovrPatched;
+	public boolean freexterPatched;
+	public boolean greystripePatched1;
+	public boolean greystripePatched2;
+	public boolean glomoPatched;
+	public boolean vservContextFound;
 	
 	// greystripe
 	public String greystripeConnectionClass;
@@ -64,6 +65,7 @@ public class Main implements Runnable {
 	public String greystripeStartFunc;
 	public String greystripeCheckFunc;
 	public boolean hasGsid;
+	public boolean hasGlomoCfg;
 	
 	Map<String, ClassNode> classNodes = new HashMap<String, ClassNode>();
 
@@ -262,6 +264,10 @@ public class Main implements Runnable {
 							// greystripe: check for .gsid resource
 							hasGsid = zipFile.getEntry(".gsid") != null || zipFile.getEntry("/.gsid") != null;
 						}
+						if ("glomo".equals(mode) || "auto".equals(mode)) {
+							// glomo: check for glomo.cfg resource
+							hasGlomoCfg = zipFile.getEntry("glomo.cfg") != null || zipFile.getEntry("/glomo.cfg") != null;
+						}
 						
 						try (ZipOutputStream zipOut = new ZipOutputStream(new FileOutputStream(temp))) {
 							Enumeration<? extends ZipEntry> entries = zipFile.entries();
@@ -299,12 +305,12 @@ public class Main implements Runnable {
 														ins.set(n, new InsnNode(Opcodes.ICONST_1));
 														
 														log("Greystripe patched (method 1): " + greystripeConnectionClass + '.' + greystripeStartFunc + "()V");
-														greystripeFound1 = true;
+														greystripePatched1 = true;
 														break;
 													}
 												}
 											}
-										} else if (alw1Found && mn.name.equals("trialEnd") && mn.desc.equals("()V")) {
+										} else if (alw1Patched && mn.name.equals("trialEnd") && mn.desc.equals("()V")) {
 											// alw1: remove trialEnd() code
 											log("Patched ALW1: " + className + '.' + mn.name + mn.desc);
 											mn.instructions.clear();
@@ -354,7 +360,7 @@ public class Main implements Runnable {
 												// remove everything until getstatic MIDlet is found
 												if (n.getOpcode() == Opcodes.GETSTATIC && !"Z".equals(((FieldInsnNode) n).desc)) {
 													log("Greystripe patched (method 2): " + greystripeRunnerClass);
-													greystripeFound2 = true;
+													greystripePatched2 = true;
 													break;
 												}
 												ins.remove(n);
@@ -374,7 +380,7 @@ public class Main implements Runnable {
 							}
 							
 							// add unvserv connector classes
-							if (connectorFound) {
+							if (connectorPatched) {
 								log("Adding vServ wrapper classes", false);
 								try (ZipInputStream zipIn = new ZipInputStream("".getClass().getResourceAsStream("/vserv.jar"))) {
 									ZipEntry entry;
@@ -390,21 +396,29 @@ public class Main implements Runnable {
 						}
 					}
 	
-					if (greystripeFound1) {
+					if (greystripePatched1) {
 						log("Warning: Greystripe may be unwrapped partially");
-					} else if (!vservFound
-							&& !alw1Found
-							&& !inneractiveFound
-							&& !hovrFound
-							&& !freexterFound
-							&& !greystripeFound2
-							&& !glomoFound) {
+					} else if (!vservPatched
+							&& !alw1Patched
+							&& !inneractivePatched
+							&& !hovrPatched
+							&& !freexterPatched
+							&& !greystripePatched2
+							&& !glomoPatched) {
 						if (hasGsid) {
-							logError("Greystripe was detected, but could not unwrap it", false);
+							logError("Greystripe was detected, but could not patch it, please report to developer!", false);
 							failed = true;
 							break run;
-						} else if (!connectorFound) {
-							logError("No ad engine was detected, aborting.", false);
+						} else if (hasGlomoCfg) {
+							logError("Glomo was detected, but could not patch it", false);
+							failed = true;
+							break run;
+						} else if (!connectorPatched) {
+							if (vservContextFound) {
+								logError("vServ was detected, but could not patch it, please report to developer!", false);
+							} else {
+								logError("No ad engine was detected, aborting.", false);
+							}
 							failed = true;
 							break run;
 						}
@@ -465,7 +479,7 @@ public class Main implements Runnable {
 	}
 	
 	void logError(String s, boolean b) {
-		System.err.println(s);
+		System.out.println(s);
 	}
 	
 	void log(String s) {
@@ -493,15 +507,15 @@ public class Main implements Runnable {
 	}
 	
 	public void resetState() {
-		alw1Found = false;
-		vservFound = false;
-		connectorFound = false;
-		inneractiveFound = false;
-		hovrFound = false;
-		freexterFound = false;
-		greystripeFound1 = false;
-		greystripeFound2 = false;
-		glomoFound = false;
+		alw1Patched = false;
+		vservPatched = false;
+		connectorPatched = false;
+		inneractivePatched = false;
+		hovrPatched = false;
+		freexterPatched = false;
+		greystripePatched1 = false;
+		greystripePatched2 = false;
+		glomoPatched = false;
 		
 		greystripeConnectionClass = null;
 		greystripeRunnerClass = null;

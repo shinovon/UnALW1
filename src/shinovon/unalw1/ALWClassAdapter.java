@@ -19,10 +19,10 @@ public class ALWClassAdapter extends ClassVisitor {
 	public ALWClassAdapter(ClassVisitor visitor, String name) {
 		super(Opcodes.ASM4, visitor);
 		if (("auto".equals(Main.inst.mode) || "vserv".equals(Main.inst.mode))
-				&& name.endsWith("VservManager")) {
+				&& (name.endsWith("VservManager") || name.endsWith("VservAd"))) {
 			// TODO: vserv: check if all vserv have this class
 			Main.inst.log("Found VservManager");
-			Main.inst.vservFound = true;
+			Main.inst.vservPatched = true;
 		}
 		this.className = name;
 	}
@@ -40,26 +40,26 @@ public class ALWClassAdapter extends ClassVisitor {
 				if (("auto".equals(Main.inst.mode) || "hovr".equals(Main.inst.mode))
 						&& "WRAPPER".equals(className)) {
 					Main.inst.log("Found hovr WRAPPER");
-					Main.inst.hovrFound = true;
+					Main.inst.hovrPatched = true;
 					name = "startApp_";
 				} else if (freexter) {
 					Main.inst.log("Found freexter");
-					Main.inst.freexterFound = true;
+					Main.inst.freexterPatched = true;
 					name = "startApp_";
 				}
 			} else if ("destroyApp".equals(name) && "(Z)V".equals(desc)) {
 				// freexter: remove wrapped destroyApp()
 				if (freexter) {
-					Main.inst.freexterFound = true;
+					Main.inst.freexterPatched = true;
 					name = "destroyApp_";
 				}
 			} else if (freexter && "fxStart".equals(name) && "()V".equals(desc)) {
 				// freexter: rename fxStart to startApp
-				Main.inst.freexterFound = true;
+				Main.inst.freexterPatched = true;
 				name = "startApp";
 			} else if (freexter && "fxDestroy".equals(name) && "()V".equals(desc)) {
 				// freexter: rename fxDestroy to destroyApp
-				Main.inst.freexterFound = true;
+				Main.inst.freexterPatched = true;
 				name = "destroyApp";
 				desc = "(Z)V";
 			}
