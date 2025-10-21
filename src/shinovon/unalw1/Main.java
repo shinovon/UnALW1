@@ -87,7 +87,7 @@ public class Main implements Runnable {
 
 	public static void main(String[] args) {
 		if (args.length > 0) {
-			System.out.println("UnALW1 v4.0 by shinovon, 2025");
+			System.out.println("UnALW1 v5.0 by shinovon, 2025");
 			System.out.println("J2ME advertising and payment engines removal tool");
 			System.out.println();
 			if (args[0].endsWith("-version")) return;
