@@ -3,7 +3,19 @@ Copyright (c) 2025 Arman Jussupgaliyev
 */
 package shinovon.unalw1;
 
+import java.awt.BorderLayout;
 import java.awt.EventQueue;
+import java.awt.GridLayout;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.Transferable;
+import java.awt.dnd.DnDConstants;
+import java.awt.dnd.DropTarget;
+import java.awt.dnd.DropTargetDragEvent;
+import java.awt.dnd.DropTargetDropEvent;
+import java.awt.dnd.DropTargetEvent;
+import java.awt.dnd.DropTargetListener;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -21,9 +33,17 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
+import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
 
-import org.objectweb.asm.*;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
@@ -31,8 +51,12 @@ import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+import javax.swing.JComboBox;
+import javax.swing.DefaultComboBoxModel;
 
 public class Main implements Runnable {
+	
+	public static final String VERSION = "5.0";
 	
 	public static final String[] modes = {
 			"auto",
@@ -43,6 +67,17 @@ public class Main implements Runnable {
 			"freexter",
 			"gs",
 			"glomo",
+	};
+	
+	public static final String[] modeNames = {
+			"Auto",
+			"ALW1",
+			"vServ",
+			"Inneractive",
+			"Hovr",
+			"Freexter",
+			"Greystripe",
+			"Glomo",
 	};
 	
 	static Main inst;
@@ -72,6 +107,13 @@ public class Main implements Runnable {
 	
 	// ui
 	private JFrame frame;
+	private JTextField inField;
+	private JTextField proguardField;
+	private JTextField libField;
+	private JTextField outField;
+	private static JTextArea textArea;
+	
+	private StringBuilder sb = new StringBuilder();
 	
 	// options
 	String proguard;
@@ -85,11 +127,11 @@ public class Main implements Runnable {
 	boolean cli;
 	int files;
 	boolean failed;
-	boolean noOutput;
+	boolean noOutput = true;
 
 	public static void main(String[] args) {
 		if (args.length > 0) {
-			System.out.println("UnALW1 v5.0 by shinovon, 2025");
+			System.out.println("UnALW1 v" + VERSION + " by shinovon, 2025");
 			System.out.println("J2ME advertising and payment engines removal tool");
 			System.out.println();
 			if (args[0].endsWith("-version")) return;
@@ -172,6 +214,7 @@ public class Main implements Runnable {
 	
 	public void run() {
 		running = true;
+		clear();
 		try {
 			checkMode: {
 				for (String s: modes) {
@@ -483,6 +526,9 @@ public class Main implements Runnable {
 	
 	void logError(String s, boolean b) {
 		System.out.println(s);
+		if (textArea == null) return;
+		sb.append(s).append('\n');
+		if (b) textArea.setText(sb.toString());
 	}
 	
 	void log(String s) {
@@ -491,22 +537,199 @@ public class Main implements Runnable {
 	
 	void log(String s, boolean b) {
 		System.out.println(s);
-//		if (textArea == null) return;
-//		sb.append(s).append('\n');
-//		if (b) textArea.setText(sb.toString());
+		if (textArea == null) return;
+		sb.append(s).append('\n');
+		if (b) textArea.setText(sb.toString());
 	}
 	
 	void clear() {
-//		if (textArea == null) return;
-//		sb.setLength(0);
-//		textArea.setText("");
-//		if (global) {
-//			found = new ArrayList<String>();
-//		}
+		if (textArea == null) return;
+		sb.setLength(0);
+		textArea.setText("");
 	}
 
+	/**
+	 * Inititalize the frame
+	 */
 	void initializeUI() {
+		frame = new JFrame();
+		frame.setTitle("UnAWL1 v" + VERSION);
+		frame.setBounds(100, 100, 350, 536);
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.getContentPane().setLayout(new GridLayout(0, 1, 0, 0));
 		
+		JPanel panel_1 = new JPanel();
+		frame.getContentPane().add(panel_1);
+		panel_1.setLayout(new BorderLayout(5, 0));
+		
+		JPanel panel = new JPanel();
+		panel_1.add(panel, BorderLayout.NORTH);
+		panel.setLayout(new GridLayout(0, 1, 0, 0));
+		
+		JPanel panel_3 = new JPanel();
+		panel.add(panel_3);
+		panel_3.setLayout(new BorderLayout(0, 0));
+		
+		JLabel lblInput = new JLabel("Input: ");
+		panel_3.add(lblInput, BorderLayout.WEST);
+		
+		inField = new JTextField();
+		inField.setText("");
+		inField.setToolTipText("Input jar file or directory path");
+		panel_3.add(inField, BorderLayout.CENTER);
+		inField.setColumns(10);
+		
+		JButton btnNewButton = new JButton("...");
+		panel_3.add(btnNewButton, BorderLayout.EAST);
+		
+		JPanel panel_6 = new JPanel();
+		panel.add(panel_6);
+		panel_6.setLayout(new BorderLayout(0, 0));
+		
+		JLabel lblNewLabel_2 = new JLabel("Output: ");
+		panel_6.add(lblNewLabel_2, BorderLayout.WEST);
+		
+		outField = new JTextField();
+		outField.setText("");
+		outField.setToolTipText("Output jar file or directory path, may be left empty");
+		panel_6.add(outField, BorderLayout.CENTER);
+		outField.setColumns(10);
+		
+		JButton btnNewButton_3 = new JButton("...");
+		btnNewButton_3.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+			}
+		});
+		panel_6.add(btnNewButton_3, BorderLayout.EAST);
+		
+		JPanel panel_4 = new JPanel();
+		panel.add(panel_4);
+		panel_4.setLayout(new BorderLayout(0, 0));
+		
+		JLabel lblNewLabel = new JLabel("Proguard jar: ");
+		panel_4.add(lblNewLabel, BorderLayout.WEST);
+		
+		proguardField = new JTextField();
+		proguardField.setText("");
+		proguardField.setToolTipText("Path to proguard.jar, e.g: C:\\proguard-7.7.0\\lib\\proguard.jar");
+		panel_4.add(proguardField, BorderLayout.CENTER);
+		proguardField.setColumns(10);
+		
+		JButton btnNewButton_1 = new JButton("...");
+		btnNewButton_1.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+			}
+		});
+		panel_4.add(btnNewButton_1, BorderLayout.EAST);
+		
+		JPanel panel_5 = new JPanel();
+		panel.add(panel_5);
+		panel_5.setLayout(new BorderLayout(0, 0));
+		
+		JLabel lblNewLabel_1 = new JLabel("MIDP libraries: ");
+		panel_5.add(lblNewLabel_1, BorderLayout.WEST);
+		
+		libField = new JTextField();
+		libField.setText("");
+		libField.setToolTipText("Path to folder with MIDP libraries, e.g: C:\\Nokia\\Devices\\S40_5th_Edition_SDK\\lib");
+		panel_5.add(libField, BorderLayout.CENTER);
+		libField.setColumns(10);
+		
+		JButton btnNewButton_2 = new JButton("...");
+		btnNewButton_2.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+			}
+		});
+		panel_5.add(btnNewButton_2, BorderLayout.EAST);
+		
+		JPanel panel_7 = new JPanel();
+		panel.add(panel_7);
+		panel_7.setLayout(new BorderLayout(0, 0));
+		
+		JComboBox comboBox = new JComboBox();
+		comboBox.setModel(new DefaultComboBoxModel(modeNames));
+		panel_7.add(comboBox);
+		
+		JLabel lblNewLabel_3 = new JLabel("Mode: ");
+		panel_7.add(lblNewLabel_3, BorderLayout.WEST);
+		
+		JPanel panel_2 = new JPanel();
+		panel.add(panel_2);
+		panel_2.setLayout(new BorderLayout(0, 0));
+		
+		JButton openBtn = new JButton("Start");
+		panel_2.add(openBtn);
+		
+		openBtn.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if (running) return;
+				target = inField.getText();
+				proguard = proguardField.getText();
+				libraryjars = libField.getText();
+				mode = modes[comboBox.getSelectedIndex()];
+				new Thread(Main.this).start();
+			}
+		});
+		
+		JScrollPane scrollPane = new JScrollPane();
+		panel_1.add(scrollPane, BorderLayout.CENTER);
+		scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+		
+		textArea = new JTextArea();
+		textArea.setEditable(false);
+		textArea.setText("");
+		scrollPane.setViewportView(textArea);
+		
+		DropTarget dropTarget = new DropTarget(textArea, DnDConstants.ACTION_COPY_OR_MOVE, null);
+		try {
+			dropTarget.addDropTargetListener(new DropTargetListener() {
+
+				@Override
+				public void dragEnter(DropTargetDragEvent dtde) {
+				}
+
+				@Override
+				public void dragOver(DropTargetDragEvent dtde) {
+				}
+
+				@Override
+				public void dropActionChanged(DropTargetDragEvent dtde) {
+				}
+
+				@Override
+				public void dragExit(DropTargetEvent dte) {
+				}
+
+				@Override
+				public void drop(DropTargetDropEvent dtde) {
+					if (running) return;
+					try {
+						Transferable t = dtde.getTransferable();
+						if (t.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
+							dtde.acceptDrop(dtde.getDropAction());
+							List transferData = (List) t.getTransferData(DataFlavor.javaFileListFlavor);
+							
+	                        if (transferData != null && transferData.size() > 0) {
+	                        	StringBuilder sb = new StringBuilder();
+	                        	for (Object s : transferData) {
+	                        		sb.append(s).append(File.pathSeparatorChar);
+	                        	}
+	                        	sb.setLength(sb.length() - 1);
+	                        	inField.setText(sb.toString());
+	                            dtde.dropComplete(true);
+	                        }
+						} else {
+		                    dtde.rejectDrop();
+		                }
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+				
+			});
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 	
 	public void resetState() {
