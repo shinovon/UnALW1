@@ -18,11 +18,11 @@ public class ALWClassAdapter extends ClassVisitor {
 
 	public ALWClassAdapter(ClassVisitor visitor, String name) {
 		super(Opcodes.ASM4, visitor);
-		if (("auto".equals(Main.mode) || "vserv".equals(Main.mode))
+		if (("auto".equals(Main.inst.mode) || "vserv".equals(Main.inst.mode))
 				&& name.endsWith("VservManager")) {
 			// TODO: vserv: check if all vserv have this class
-			System.out.println("Found VservManager");
-			Main.vservFound = true;
+			Main.inst.log("Found VservManager");
+			Main.inst.vservFound = true;
 		}
 		this.className = name;
 	}
@@ -34,32 +34,32 @@ public class ALWClassAdapter extends ClassVisitor {
 	
 	public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
 		if (superName != null && !superName.equals("javax/microedition/MIDlet")) {
-			boolean freexter = ("auto".equals(Main.mode) || "freexter".equals(Main.mode)) && "iMidlet".equals(className);
+			boolean freexter = ("auto".equals(Main.inst.mode) || "freexter".equals(Main.inst.mode)) && "iMidlet".equals(className);
 			if ("startApp".equals(name) && "()V".equals(desc)) {
 				// hovr and freexter: remove wrapped startApp()
-				if (("auto".equals(Main.mode) || "hovr".equals(Main.mode))
+				if (("auto".equals(Main.inst.mode) || "hovr".equals(Main.inst.mode))
 						&& "WRAPPER".equals(className)) {
-					System.out.println("Found hovr WRAPPER");
-					Main.hovrFound = true;
+					Main.inst.log("Found hovr WRAPPER");
+					Main.inst.hovrFound = true;
 					name = "startApp_";
 				} else if (freexter) {
-					System.out.println("Found freexter");
-					Main.freexterFound = true;
+					Main.inst.log("Found freexter");
+					Main.inst.freexterFound = true;
 					name = "startApp_";
 				}
 			} else if ("destroyApp".equals(name) && "(Z)V".equals(desc)) {
 				// freexter: remove wrapped destroyApp()
 				if (freexter) {
-					Main.freexterFound = true;
+					Main.inst.freexterFound = true;
 					name = "destroyApp_";
 				}
 			} else if (freexter && "fxStart".equals(name) && "()V".equals(desc)) {
 				// freexter: rename fxStart to startApp
-				Main.freexterFound = true;
+				Main.inst.freexterFound = true;
 				name = "startApp";
 			} else if (freexter && "fxDestroy".equals(name) && "()V".equals(desc)) {
 				// freexter: rename fxDestroy to destroyApp
-				Main.freexterFound = true;
+				Main.inst.freexterFound = true;
 				name = "destroyApp";
 				desc = "(Z)V";
 			}
