@@ -331,7 +331,7 @@ public class Main implements Runnable {
 									}
 									
 									classNodes.put(className, node);
-								} else {
+								} else if (!noOutput) {
 									if (verbose) log("Copying " + name);
 									try (InputStream in = zipFile.getInputStream(entry)) {
 										zipOut.putNextEntry(new ZipEntry(entry.getName()));
@@ -371,6 +371,7 @@ public class Main implements Runnable {
 									}
 								}
 								
+								if (noOutput) continue;
 								if (verbose) log("Writing " + className);
 	
 								ClassWriter classWriter = new ClassWriter(0);
@@ -381,7 +382,7 @@ public class Main implements Runnable {
 							}
 							
 							// add unvserv connector classes
-							if (connectorPatched) {
+							if (connectorPatched && !noOutput) {
 								log("Adding vServ wrapper classes", false);
 								try (ZipInputStream zipIn = new ZipInputStream("".getClass().getResourceAsStream("/vserv.jar"))) {
 									ZipEntry entry;
@@ -418,12 +419,12 @@ public class Main implements Runnable {
 							if (vservContextFound) {
 								logError("vServ was detected, but could not patch it, please report to developer!", false);
 							} else {
-								logError("No ad engine was detected, aborting.", false);
+								logError("No known ad engines were detected, aborting.", false);
 							}
 							failed = true;
 							break run;
 						}
-						log("Warning: No ad engine was detected, prooceding anyway..");
+						log("Warning: No known ad engines were detected, prooceding anyway..");
 					}
 	
 					if (noOutput) break run;
