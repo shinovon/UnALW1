@@ -49,7 +49,8 @@ public class ALWMethodAdapter extends MethodVisitor {
 	public void visitMethodInsn(int opcode, String owner, String name, String desc) {
 		// TODO handle obfuscated inneractive
 		if (("vserv".equals(Main.inst.mode)
-				|| ("auto".equals(Main.inst.mode) && (className.endsWith("VservManager") || className.endsWith("VservAd"))))
+				|| ("auto".equals(Main.inst.mode)
+						&& (className.endsWith("VservManager") || className.endsWith("VservAd") || className.endsWith("VSERV_BCI_CLASS_000"))))
 				&& "javax/microedition/io/Connector".equals(owner)) {
 			// vserv: wrap connector static calls
 			Main.inst.log("Connector call wrapped: " + name + desc + " in " + className + '.' + this.name + this.desc);
