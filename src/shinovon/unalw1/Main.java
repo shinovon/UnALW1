@@ -127,7 +127,7 @@ public class Main implements Runnable {
 	boolean cli;
 	int files;
 	boolean failed;
-	boolean noOutput = true;
+	boolean noOutput;
 
 	public static void main(String[] args) {
 		if (args.length > 0) {
