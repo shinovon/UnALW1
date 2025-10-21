@@ -53,7 +53,7 @@ public class ALWMethodAdapter extends MethodVisitor {
 				&& "javax/microedition/io/Connector".equals(owner)) {
 			// vserv: wrap connector static calls
 			Main.inst.log("Connector call wrapped: " + name + desc + " in " + className + '.' + this.name + this.desc);
-			Main.inst.connectorPatched = true;
+			Main.inst.vservConnectorPatched = true;
 			owner = "UnVservConnector";
 		} else if (("ia".equals(Main.inst.mode) || "auto".equals(Main.inst.mode))
 				&& ("innerActiveStart".equals(name) || "innerActiveStartGame".equals(name)) && "()Z".equals(desc)) {

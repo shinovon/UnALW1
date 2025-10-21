@@ -19,10 +19,9 @@ public class ALWClassAdapter extends ClassVisitor {
 	public ALWClassAdapter(ClassVisitor visitor, String name) {
 		super(Opcodes.ASM4, visitor);
 		if (("auto".equals(Main.inst.mode) || "vserv".equals(Main.inst.mode))
-				&& (name.endsWith("VservManager") || name.endsWith("VservAd"))) {
+				&& name.endsWith("VservManager")) {
 			// TODO: vserv: check if all vserv have this class
 			Main.inst.log("Found VservManager");
-			Main.inst.vservPatched = true;
 		}
 		this.className = name;
 	}

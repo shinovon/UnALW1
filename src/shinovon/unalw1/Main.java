@@ -49,8 +49,7 @@ public class Main implements Runnable {
 	
 	// state
 	public boolean alw1Patched;
-	public boolean vservPatched;
-	public boolean connectorPatched;
+	public boolean vservConnectorPatched;
 	public boolean inneractivePatched;
 	public boolean hovrPatched;
 	public boolean freexterPatched;
@@ -382,7 +381,7 @@ public class Main implements Runnable {
 							}
 							
 							// add unvserv connector classes
-							if (connectorPatched && !noOutput) {
+							if (vservConnectorPatched && !noOutput) {
 								log("Adding vServ wrapper classes", false);
 								try (ZipInputStream zipIn = new ZipInputStream("".getClass().getResourceAsStream("/vserv.jar"))) {
 									ZipEntry entry;
@@ -400,7 +399,7 @@ public class Main implements Runnable {
 	
 					if (greystripePatched1) {
 						log("Warning: Greystripe may be unwrapped partially");
-					} else if (!vservPatched
+					} else if (!vservConnectorPatched
 							&& !alw1Patched
 							&& !inneractivePatched
 							&& !hovrPatched
@@ -415,7 +414,7 @@ public class Main implements Runnable {
 							logError("Glomo was detected, but could not patch it", false);
 							failed = true;
 							break run;
-						} else if (!connectorPatched) {
+						} else if (!vservConnectorPatched) {
 							if (vservContextFound) {
 								logError("vServ was detected, but could not patch it, please report to developer!", false);
 							} else {
@@ -512,8 +511,7 @@ public class Main implements Runnable {
 	
 	public void resetState() {
 		alw1Patched = false;
-		vservPatched = false;
-		connectorPatched = false;
+		vservConnectorPatched = false;
 		inneractivePatched = false;
 		hovrPatched = false;
 		freexterPatched = false;
