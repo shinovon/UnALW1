@@ -579,8 +579,12 @@ public class Main implements Runnable {
 		panel_3.add(inField, BorderLayout.CENTER);
 		inField.setColumns(10);
 		
-		JButton btnNewButton = new JButton("...");
-		panel_3.add(btnNewButton, BorderLayout.EAST);
+//		JButton btnNewButton = new JButton("...");
+//		btnNewButton.addActionListener(new ActionListener() {
+//			public void actionPerformed(ActionEvent e) {
+//			}
+//		});
+//		panel_3.add(btnNewButton, BorderLayout.EAST);
 		
 		JPanel panel_6 = new JPanel();
 		panel.add(panel_6);
@@ -595,12 +599,12 @@ public class Main implements Runnable {
 		panel_6.add(outField, BorderLayout.CENTER);
 		outField.setColumns(10);
 		
-		JButton btnNewButton_3 = new JButton("...");
-		btnNewButton_3.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-			}
-		});
-		panel_6.add(btnNewButton_3, BorderLayout.EAST);
+//		JButton btnNewButton_3 = new JButton("...");
+//		btnNewButton_3.addActionListener(new ActionListener() {
+//			public void actionPerformed(ActionEvent e) {
+//			}
+//		});
+//		panel_6.add(btnNewButton_3, BorderLayout.EAST);
 		
 		JPanel panel_4 = new JPanel();
 		panel.add(panel_4);
@@ -615,12 +619,12 @@ public class Main implements Runnable {
 		panel_4.add(proguardField, BorderLayout.CENTER);
 		proguardField.setColumns(10);
 		
-		JButton btnNewButton_1 = new JButton("...");
-		btnNewButton_1.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-			}
-		});
-		panel_4.add(btnNewButton_1, BorderLayout.EAST);
+//		JButton btnNewButton_1 = new JButton("...");
+//		btnNewButton_1.addActionListener(new ActionListener() {
+//			public void actionPerformed(ActionEvent e) {
+//			}
+//		});
+//		panel_4.add(btnNewButton_1, BorderLayout.EAST);
 		
 		JPanel panel_5 = new JPanel();
 		panel.add(panel_5);
@@ -635,12 +639,12 @@ public class Main implements Runnable {
 		panel_5.add(libField, BorderLayout.CENTER);
 		libField.setColumns(10);
 		
-		JButton btnNewButton_2 = new JButton("...");
-		btnNewButton_2.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-			}
-		});
-		panel_5.add(btnNewButton_2, BorderLayout.EAST);
+//		JButton btnNewButton_2 = new JButton("...");
+//		btnNewButton_2.addActionListener(new ActionListener() {
+//			public void actionPerformed(ActionEvent e) {
+//			}
+//		});
+//		panel_5.add(btnNewButton_2, BorderLayout.EAST);
 		
 		JPanel panel_7 = new JPanel();
 		panel.add(panel_7);

@@ -117,6 +117,8 @@ public class ALWMethodAdapter extends MethodVisitor {
 			// vserv
 			Main.inst.log("vServ string constant found: " + this.className + '.' + this.name + this.desc);
 			Main.inst.vservContextFound = true;
+		} else if (cst instanceof String && cst.equals("GlowingMobile")) {
+			Main.inst.log("Glomo string constant found: " + this.className + '.' + this.name + this.desc);
 		}
 		super.visitLdcInsn(cst);
 	}
