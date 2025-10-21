@@ -86,6 +86,7 @@ public class Main implements Runnable {
 	boolean cli;
 	int files;
 	boolean failed;
+	boolean noOutput;
 
 	public static void main(String[] args) {
 		if (args.length > 0) {
@@ -425,6 +426,8 @@ public class Main implements Runnable {
 						log("Warning: No ad engine was detected, prooceding anyway..");
 					}
 	
+					if (noOutput) break run;
+					
 					// preverify with proguard
 					File tempConfig = File.createTempFile("unalw1", ".cfg");
 					try {

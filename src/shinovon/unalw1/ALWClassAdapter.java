@@ -43,22 +43,25 @@ public class ALWClassAdapter extends ClassVisitor {
 					Main.inst.hovrPatched = true;
 					name = "startApp_";
 				} else if (freexter) {
-					Main.inst.log("Found freexter");
+					Main.inst.log("Patched Freexter startApp at " + className);
 					Main.inst.freexterPatched = true;
 					name = "startApp_";
 				}
 			} else if ("destroyApp".equals(name) && "(Z)V".equals(desc)) {
 				// freexter: remove wrapped destroyApp()
 				if (freexter) {
+					Main.inst.log("Patched Freexter destroyApp at " + className);
 					Main.inst.freexterPatched = true;
 					name = "destroyApp_";
 				}
 			} else if (freexter && "fxStart".equals(name) && "()V".equals(desc)) {
 				// freexter: rename fxStart to startApp
+				Main.inst.log("Patched Freexter fxStart at " + className);
 				Main.inst.freexterPatched = true;
 				name = "startApp";
 			} else if (freexter && "fxDestroy".equals(name) && "()V".equals(desc)) {
 				// freexter: rename fxDestroy to destroyApp
+				Main.inst.log("Patched Freexter fxDestroy at " + className);
 				Main.inst.freexterPatched = true;
 				name = "destroyApp";
 				desc = "(Z)V";

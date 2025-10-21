@@ -1,4 +1,6 @@
 /.settings/
 /bin/
 *.jar
+*.jad
+*.cfg
 !/src/vserv.jar
