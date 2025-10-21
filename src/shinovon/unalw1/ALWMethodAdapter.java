@@ -113,6 +113,7 @@ public class ALWMethodAdapter extends MethodVisitor {
 			Main.inst.log("Greystripe start function found: " + this.className + '.' + this.name + this.desc);
 			Main.inst.greystripeStartFunc = this.name;
 		} else if (cst instanceof String && cst.equals("X-VSERV-CONTEXT")) {
+			// vserv
 			Main.inst.log("vServ string constant found: " + this.className + '.' + this.name + this.desc);
 			Main.inst.vservContextFound = true;
 		}

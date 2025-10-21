@@ -69,7 +69,7 @@ public class Main implements Runnable {
 	
 	Map<String, ClassNode> classNodes = new HashMap<String, ClassNode>();
 
-	private boolean running;
+	boolean running;
 	
 	// ui
 	private JFrame frame;
@@ -516,6 +516,7 @@ public class Main implements Runnable {
 		greystripePatched1 = false;
 		greystripePatched2 = false;
 		glomoPatched = false;
+		vservContextFound = false;
 		
 		greystripeConnectionClass = null;
 		greystripeRunnerClass = null;
