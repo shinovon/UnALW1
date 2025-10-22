@@ -51,6 +51,7 @@ import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.VarInsnNode;
 import javax.swing.JComboBox;
 import javax.swing.DefaultComboBoxModel;
 
@@ -67,6 +68,7 @@ public class Main implements Runnable {
 			"freexter",
 			"gs",
 			"glomo",
+			"lm",
 			"sms",
 	};
 	
@@ -79,6 +81,7 @@ public class Main implements Runnable {
 			"Freexter",
 			"Greystripe",
 			"Glomo",
+			"LM",
 			"SMS",
 	};
 	
@@ -94,6 +97,7 @@ public class Main implements Runnable {
 	public boolean greystripePatched2;
 	public boolean glomoPatched;
 	public boolean smsPatched;
+	public boolean lmPatched;
 	public boolean vservContextFound;
 	
 	// greystripe
@@ -361,6 +365,14 @@ public class Main implements Runnable {
 											log("Patched ALW1: " + className + '.' + mn.name + mn.desc);
 											mn.instructions.clear();
 											mn.instructions.add(new InsnNode(Opcodes.RETURN));
+										} else if (("auto".equals(mode) || "lm".equals(mode))
+												&& className.endsWith("LMGFlow") && mn.name.equals("vStartFlow") && mn.desc.equals("()V")) {
+											log("Patched LM vStartFlow: " + className + '.' + mn.name + mn.desc);
+											Main.inst.lmPatched = true;
+											mn.instructions.clear();
+											mn.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+											mn.instructions.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, className, "vMenuOpStartGame", "()V"));
+											mn.instructions.add(new InsnNode(Opcodes.RETURN));
 										}
 	
 										// renaming
@@ -452,7 +464,8 @@ public class Main implements Runnable {
 							&& !freexterPatched
 							&& !greystripePatched2
 							&& !glomoPatched
-							&& !smsPatched) {
+							&& !smsPatched
+							&& !lmPatched) {
 						if (hasGsid) {
 							logError("Greystripe was detected, but could not patch it, please report to developer!", false);
 							failed = true;
@@ -765,6 +778,8 @@ public class Main implements Runnable {
 		greystripePatched1 = false;
 		greystripePatched2 = false;
 		glomoPatched = false;
+		smsPatched = false;
+		lmPatched = false;
 		vservContextFound = false;
 		
 		greystripeConnectionClass = null;

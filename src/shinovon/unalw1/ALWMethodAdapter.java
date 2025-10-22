@@ -111,6 +111,14 @@ public class ALWMethodAdapter extends MethodVisitor {
 			super.visitInsn(Opcodes.POP);
 			super.visitInsn(Opcodes.POP);
 			return;
+		} else if (("lm".equals(Main.inst.mode) || "auto".equals(Main.inst.mode))
+				&& className.endsWith("LMGFlow") && this.name.equals("vMenuOpStartGame")
+				&& name.equals("checkLicense") && desc.equals("(Z)Z")) {
+			// remove sms send
+			Main.inst.log("Patched LM checkLicense: " + name + desc + " in " + className + '.' + this.name + this.desc);
+			Main.inst.lmPatched = true;
+			super.visitInsn(Opcodes.POP);
+			return;
 		}
 		super.visitMethodInsn(opcode, owner, name, desc);
 	}
