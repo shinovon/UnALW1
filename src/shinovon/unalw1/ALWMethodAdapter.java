@@ -135,6 +135,12 @@ public class ALWMethodAdapter extends MethodVisitor {
 			Main.inst.vservContextFound = true;
 		} else if (cst instanceof String && cst.equals("GlowingMobile")) {
 			Main.inst.log("Glomo string constant found: " + this.className + '.' + this.name + this.desc);
+		} else if (cst instanceof String && cst.equals("IA-X-errorInDisclaimerNotice") && name.equals("<init>")) {
+			Main.inst.log("Inneractive string constant found: " + this.className + '.' + this.name + this.desc);
+			Main.inst.iaRunnerClass = className;
+		} else if (cst instanceof String && cst.equals("IA-X-contentName")) {
+			Main.inst.log("Inneractive string constant found: " + this.className + '.' + this.name + this.desc);
+			Main.inst.iaCanvasClass = className;
 		}
 		super.visitLdcInsn(cst);
 	}

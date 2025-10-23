@@ -108,6 +108,10 @@ public class Main implements Runnable {
 	public boolean hasGsid;
 	public boolean hasGlomoCfg;
 	
+	// inneractive
+	public String iaRunnerClass;
+	public String iaCanvasClass;
+	
 	Map<String, ClassNode> classNodes = new HashMap<String, ClassNode>();
 
 	boolean running;
@@ -364,15 +368,26 @@ public class Main implements Runnable {
 											// alw1: remove trialEnd() code
 											log("Patched ALW1: " + className + '.' + mn.name + mn.desc);
 											mn.instructions.clear();
+											clearFunction(mn);
 											mn.instructions.add(new InsnNode(Opcodes.RETURN));
 										} else if (("auto".equals(mode) || "lm".equals(mode))
 												&& className.endsWith("LMGFlow") && mn.name.equals("vStartFlow") && mn.desc.equals("()V")) {
 											log("Patched LM vStartFlow: " + className + '.' + mn.name + mn.desc);
 											Main.inst.lmPatched = true;
-											mn.instructions.clear();
+											clearFunction(mn);
 											mn.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
 											mn.instructions.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, className, "vMenuOpStartGame", "()V"));
 											mn.instructions.add(new InsnNode(Opcodes.RETURN));
+										} else if ("auto".equals(mode) || "ia".equals(mode)) {
+											if (iaCanvasClass != null && iaCanvasClass.equals(className)
+													&& (mn.desc.equals("(Ljavax/microedition/midlet/MIDlet;)B") || mn.desc.equals("()B"))) {
+												// ia: remove TimerTask.run() code
+												log("Patched Inneractive (method 2): " + className + '.' + mn.name + mn.desc);
+												Main.inst.inneractivePatched = true;
+												clearFunction(mn);
+												mn.instructions.add(new InsnNode(Opcodes.ICONST_0));
+												mn.instructions.add(new InsnNode(Opcodes.IRETURN));
+											}
 										}
 	
 										// renaming
@@ -565,9 +580,6 @@ public class Main implements Runnable {
 		textArea.setText("");
 	}
 
-	/**
-	 * Inititalize the frame
-	 */
 	void initializeUI() {
 		frame = new JFrame();
 		frame.setTitle("UnAWL1 v" + VERSION);
@@ -787,8 +799,24 @@ public class Main implements Runnable {
 		greystripeStartFunc = null;
 		greystripeCheckFunc = null;
 		hasGsid = false;
+		hasGlomoCfg = false;
+		
+		iaRunnerClass = null;
+		iaCanvasClass = null;
 		
 		failed = false;
+		
+		classNodes.clear();
+	}
+	
+	private static void clearFunction(MethodNode mn) {
+		mn.instructions.clear();
+		try {
+			mn.tryCatchBlocks.clear();
+		} catch (Exception ignored) {}
+		try {
+			mn.localVariables.clear();
+		} catch (Exception ignored) {}
 	}
 	
 	private static String escapeFileArg(String s) {
