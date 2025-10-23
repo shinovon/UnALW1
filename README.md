@@ -6,8 +6,9 @@ Tool for removing ad and payment engines from J2ME games
 Currently supports:
 - ALW1/ALW2
 - vServ
-- Inneractive (not all vendors/games)
+- Inneractive
 - Hovr
 - Freexter
 - Greystripe (partially)
 - Glomo (not all vendors/games)
+- LM (Aircel)
