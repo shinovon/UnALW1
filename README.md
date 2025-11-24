@@ -12,3 +12,4 @@ Currently supports:
 - Greystripe (partially)
 - Glomo (not all vendors/games)
 - LM (Aircel)
+- Gameloft
