@@ -49,6 +49,7 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
+import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
@@ -70,6 +71,7 @@ public class Main implements Runnable {
 			"glomo",
 			"lm",
 			"sms",
+			"gloft",
 	};
 	
 	public static final String[] modeNames = {
@@ -82,6 +84,7 @@ public class Main implements Runnable {
 			"Greystripe",
 			"Glomo",
 			"LM",
+			"Gameloft",
 			"SMS",
 	};
 	
@@ -99,6 +102,7 @@ public class Main implements Runnable {
 	public boolean smsPatched;
 	public boolean lmPatched;
 	public boolean vservContextFound;
+	public boolean gloftPatched;
 	
 	// greystripe
 	public String greystripeConnectionClass;
@@ -111,6 +115,13 @@ public class Main implements Runnable {
 	// inneractive
 	public String iaRunnerClass;
 	public String iaCanvasClass;
+	
+	// gameloft
+	public String gloftCanvasClass;
+	public String gloftTimeEndedFunc;
+	public String gloftStartedFunc;
+	public String gloftMidletWrapperClass;
+	public boolean hasDataIGP;
 	
 	Map<String, ClassNode> classNodes = new HashMap<String, ClassNode>();
 
@@ -322,6 +333,10 @@ public class Main implements Runnable {
 							// glomo: check for glomo.cfg resource
 							hasGlomoCfg = zipFile.getEntry("glomo.cfg") != null || zipFile.getEntry("/glomo.cfg") != null;
 						}
+						if ("gamelog".equals(mode) || "auto".equals(mode)) {
+							// gameloft: check for dataIGP resource
+							hasDataIGP = zipFile.getEntry("dataIGP") != null || zipFile.getEntry("/dataIGP") != null;
+						}
 						
 						try (ZipOutputStream zipOut = new ZipOutputStream(new FileOutputStream(temp))) {
 							Enumeration<? extends ZipEntry> entries = zipFile.entries();
@@ -372,6 +387,7 @@ public class Main implements Runnable {
 											mn.instructions.add(new InsnNode(Opcodes.RETURN));
 										} else if (("auto".equals(mode) || "lm".equals(mode))
 												&& className.endsWith("LMGFlow") && mn.name.equals("vStartFlow") && mn.desc.equals("()V")) {
+											// lm: replace code LMGFlow.vStartFlow() to this.vMenuOpStartGame()
 											log("Patched LM vStartFlow: " + className + '.' + mn.name + mn.desc);
 											Main.inst.lmPatched = true;
 											clearFunction(mn);
@@ -439,6 +455,77 @@ public class Main implements Runnable {
 												ins.remove(n);
 											}
 											break;
+										}
+									}
+								// gameloft
+								} else if (gloftCanvasClass != null && className.equals(gloftCanvasClass)) {
+									for (Object m : node.methods) {
+										MethodNode mn = (MethodNode) m;
+										
+										mtd: {
+											if (mn.desc.equals("()Z")) {
+												InsnList ins = mn.instructions;
+												for (AbstractInsnNode n : ins.toArray()) {
+													if (n.getOpcode() == Opcodes.INVOKEVIRTUAL && "getAppProperty".equals(((MethodInsnNode) n).name)) {
+														String ldc = (String) ((LdcInsnNode) n.getPrevious()).cst;
+														String replace = null;
+														if ("SMS-Default-Profile".equals(ldc)
+																|| "SMS-Default-Language".equals(ldc)
+																|| "SMS-ConfigFromJad".equals(ldc)
+																|| "SMS-GameCodeIGP".equals(ldc)
+																|| "SMS-PhoneModel".equals(ldc)
+																|| "SMS-Profiles".equals(ldc)) {
+															replace = "0";
+														} else if ("SMS-DemoTime".equalsIgnoreCase(ldc)) {
+															replace = Integer.toString(Integer.MAX_VALUE);
+														} else {
+															continue;
+														}
+														
+														ins.remove(n.getPrevious()); // pop ldc
+														ins.remove(n.getPrevious()); // pop getfield
+														if (replace == null) {
+															ins.set(n, new InsnNode(Opcodes.ACONST_NULL));
+														} else {
+															ins.set(n, new LdcInsnNode(replace));
+														}
+														log("Patched getAppProperty(" + ldc + ") to " + replace + " at " + className + '.' + mn.name + mn.desc);
+													}
+												}
+											}
+											
+											if (!mn.desc.equals("()V"))
+												continue;
+											
+											if (mn.name.equals(this.gloftTimeEndedFunc)) {
+												log("Gameloft demo timer patched: " + className + '.' + mn.name + mn.desc);
+												gloftPatched = true;
+												
+												clearFunction(mn);
+												mn.instructions.add(new InsnNode(Opcodes.RETURN));
+												continue;
+											}
+											
+											InsnList ins = mn.instructions;
+											boolean hasSetCurrent = false;
+											boolean hasSetFullScreen = false;
+											for (AbstractInsnNode n : ins.toArray()) {
+												if (n.getOpcode() == Opcodes.INVOKEVIRTUAL) {
+													if ("setCurrent".equals(((MethodInsnNode) n).name)) hasSetCurrent = true;
+													if ("setFullScreenMode".equals(((MethodInsnNode) n).name)) hasSetFullScreen = true;
+												}
+											}
+											
+											if (hasSetCurrent && hasSetFullScreen) {
+												log("Gameloft demo patched: " + className + '.' + mn.name + mn.desc);
+												gloftPatched = true;
+												
+												ins.remove(ins.getLast());
+												ins.add(new VarInsnNode(Opcodes.ALOAD, 0));
+												ins.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, className, this.gloftStartedFunc, "()V"));
+												ins.add(new InsnNode(Opcodes.RETURN));
+												break mtd;
+											}
 										}
 									}
 								}
@@ -782,6 +869,8 @@ public class Main implements Runnable {
 	}
 	
 	public void resetState() {
+		// note: neep in sync with state variables
+		
 		alw1Patched = false;
 		vservConnectorPatched = false;
 		inneractivePatched = false;
@@ -793,6 +882,7 @@ public class Main implements Runnable {
 		smsPatched = false;
 		lmPatched = false;
 		vservContextFound = false;
+		gloftPatched = false;
 		
 		greystripeConnectionClass = null;
 		greystripeRunnerClass = null;
@@ -803,6 +893,12 @@ public class Main implements Runnable {
 		
 		iaRunnerClass = null;
 		iaCanvasClass = null;
+		
+		gloftCanvasClass = null;
+		gloftTimeEndedFunc = null;
+		gloftStartedFunc = null;
+		gloftMidletWrapperClass = null;
+		hasDataIGP = false;
 		
 		failed = false;
 		
@@ -824,7 +920,7 @@ public class Main implements Runnable {
 		
 		for (char c : s.toCharArray()) {
 			if (c == '\'') {
-				sb.append('\\');
+				continue;
 			}
 			sb.append(c);
 		}

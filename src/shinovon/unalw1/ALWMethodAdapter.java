@@ -47,7 +47,6 @@ public class ALWMethodAdapter extends MethodVisitor {
 	}
 	
 	public void visitMethodInsn(int opcode, String owner, String name, String desc) {
-		// TODO handle obfuscated inneractive
 		if (("vserv".equals(Main.inst.mode)
 				|| ("auto".equals(Main.inst.mode)
 						&& (className.endsWith("VservManager") || className.endsWith("VservAd") || className.endsWith("VSERV_BCI_CLASS_000"))))
@@ -114,11 +113,24 @@ public class ALWMethodAdapter extends MethodVisitor {
 		} else if (("lm".equals(Main.inst.mode) || "auto".equals(Main.inst.mode))
 				&& className.endsWith("LMGFlow") && this.name.equals("vMenuOpStartGame")
 				&& name.equals("checkLicense") && desc.equals("(Z)Z")) {
-			// remove sms send
+			// lm: remove checkLicense() call
 			Main.inst.log("Patched LM checkLicense: " + name + desc + " in " + className + '.' + this.name + this.desc);
 			Main.inst.lmPatched = true;
 			super.visitInsn(Opcodes.POP);
 			return;
+		} else if (("gloft".equals(Main.inst.mode) || "auto".equals(Main.inst.mode))
+				&& Main.inst.hasDataIGP && !this.name.equals("startApp")
+				&& name.equals("startApp") && desc.equals("()V")) {
+			// gameloft
+			Main.inst.log("startApp caller found: " + this.className + '.' + this.name + this.desc);
+			Main.inst.gloftCanvasClass = this.className;
+			Main.inst.gloftStartedFunc = this.name;
+		} else if (("gloft".equals(Main.inst.mode) || "auto".equals(Main.inst.mode))
+				&& Main.inst.hasDataIGP && this.name.equals("startApp")
+				&& opcode == Opcodes.INVOKESPECIAL) {
+			// gameloft
+			Main.inst.log("Gameloft wrapper class found: " + this.className + '.' + this.name + this.desc);
+			Main.inst.gloftMidletWrapperClass = this.className;
 		}
 		super.visitMethodInsn(opcode, owner, name, desc);
 	}
@@ -134,13 +146,26 @@ public class ALWMethodAdapter extends MethodVisitor {
 			Main.inst.log("vServ string constant found: " + this.className + '.' + this.name + this.desc);
 			Main.inst.vservContextFound = true;
 		} else if (cst instanceof String && cst.equals("GlowingMobile")) {
+			// gloft
 			Main.inst.log("Glomo string constant found: " + this.className + '.' + this.name + this.desc);
 		} else if (cst instanceof String && cst.equals("IA-X-errorInDisclaimerNotice") && name.equals("<init>")) {
+			// ia
 			Main.inst.log("Inneractive string constant found: " + this.className + '.' + this.name + this.desc);
 			Main.inst.iaRunnerClass = className;
 		} else if (cst instanceof String && cst.equals("IA-X-contentName")) {
+			// ia
 			Main.inst.log("Inneractive string constant found: " + this.className + '.' + this.name + this.desc);
 			Main.inst.iaCanvasClass = className;
+		} else if (cst instanceof String && cst.equals("Demo Time ended!")) {
+			// gameloft
+			Main.inst.log("Gameloft string constant found (demo time ended): " + this.className + '.' + this.name + this.desc);
+			Main.inst.gloftCanvasClass = this.className;
+			Main.inst.gloftTimeEndedFunc = this.name;
+		} else if (cst instanceof String && cst.equals("Wrapped GAME Started!")) {
+			// gameloft
+			Main.inst.log("Gameloft string constant found (wrapped game started): " + this.className + '.' + this.name + this.desc);
+			Main.inst.gloftCanvasClass = this.className;
+			Main.inst.gloftStartedFunc = this.name;
 		}
 		super.visitLdcInsn(cst);
 	}
