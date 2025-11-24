@@ -72,6 +72,7 @@ public class Main implements Runnable {
 			"lm",
 			"sms",
 			"gloft",
+			"infond"
 	};
 	
 	public static final String[] modeNames = {
@@ -85,6 +86,7 @@ public class Main implements Runnable {
 			"Glomo",
 			"LM",
 			"Gameloft",
+			"Infond",
 			"SMS",
 	};
 	
@@ -126,6 +128,9 @@ public class Main implements Runnable {
 	
 	// vserv
 	public String startMainAppClass;
+	
+	// infond
+	public String infondStartFunc;
 	
 	Map<String, ClassNode> classNodes = new HashMap<String, ClassNode>();
 
@@ -410,16 +415,30 @@ public class Main implements Runnable {
 										} else if (("auto".equals(mode) || "vserv".equals(mode))
 												&& startMainAppClass != null && startMainAppClass.equals(className)
 												&& "startApp".equals(mn.name) && "()V".equals(mn.desc)) {
-											// vserv: add startMainApp at end of startApp
+											// vserv: add startMainApp call at end of startApp
 											log("Patched vServ startApp: " + className + '.' + mn.name + mn.desc);
 											vservConnectorPatched = true;
 											
 											InsnList ins = mn.instructions;
 											ins.remove(ins.getLast()); // remove return
-											ins.add(new LdcInsnNode(1000L));
+											ins.add(new LdcInsnNode(500L));
 											ins.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Thread", "sleep", "(J)V"));
 											ins.add(new VarInsnNode(Opcodes.ALOAD, 0));
 											ins.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, className, "startMainApp", "()V"));
+											ins.add(new InsnNode(Opcodes.RETURN));
+										} else if (("auto".equals(mode) || "infond".equals(mode))
+												&& className.startsWith("infond")
+												&& "startApp".equals(mn.name) && "()V".equals(mn.desc)) {
+											// infond: add real start call at end of startApp
+											log("Patched infond: " + className + '.' + mn.name + mn.desc);
+											infondPatched = true;
+											
+											InsnList ins = mn.instructions;
+											ins.remove(ins.getLast()); // remove return
+											ins.add(new LdcInsnNode(500L));
+											ins.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Thread", "sleep", "(J)V"));
+											ins.add(new VarInsnNode(Opcodes.ALOAD, 0));
+											ins.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, className, infondStartFunc, "()V"));
 											ins.add(new InsnNode(Opcodes.RETURN));
 										}
 	
@@ -591,7 +610,9 @@ public class Main implements Runnable {
 							&& !freexterPatched
 							&& !greystripePatched2
 							&& !glomoPatched
-							&& !lmPatched) {
+							&& !lmPatched
+							&& !infondPatched
+							&& !asgatechPatched) {
 						if (hasGsid) {
 							logError("Greystripe was detected, but could not patch it, please report to developer!", false);
 							failed = true;
@@ -930,6 +951,8 @@ public class Main implements Runnable {
 		hasDataIGP = false;
 		
 		startMainAppClass = null;
+		
+		infondStartFunc = null;
 		
 		failed = false;
 		

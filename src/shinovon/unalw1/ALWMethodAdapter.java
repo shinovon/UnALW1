@@ -133,6 +133,12 @@ public class ALWMethodAdapter extends MethodVisitor {
 			super.visitInsn(Opcodes.ICONST_1);
 			Main.inst.asgatechPatched = true;
 			return;
+		} else if (("infond".equals(Main.inst.mode) || "auto".equals(Main.inst.mode))
+				&& name.equals("iaa") && desc.equals("()Z")
+				&& Main.inst.infondStartFunc == null) {
+			// infand
+			Main.inst.log("Found infond wrapper: " + owner + " in " + className + '.' + this.name + this.desc);
+			Main.inst.infondStartFunc = this.name;
 		}
 		super.visitMethodInsn(opcode, owner, name, desc);
 	}
