@@ -13,3 +13,4 @@ Currently supports:
 - Glomo (not all vendors/games)
 - LM (Aircel)
 - Gameloft
+- Infond
