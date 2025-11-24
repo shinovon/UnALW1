@@ -125,12 +125,14 @@ public class ALWMethodAdapter extends MethodVisitor {
 			Main.inst.log("startApp caller found: " + this.className + '.' + this.name + this.desc);
 			Main.inst.gloftCanvasClass = this.className;
 			Main.inst.gloftStartedFunc = this.name;
-		} else if (("gloft".equals(Main.inst.mode) || "auto".equals(Main.inst.mode))
-				&& Main.inst.hasDataIGP && this.name.equals("startApp")
-				&& opcode == Opcodes.INVOKESPECIAL) {
-			// gameloft
-			Main.inst.log("Gameloft wrapper class found: " + this.className + '.' + this.name + this.desc);
-			Main.inst.gloftMidletWrapperClass = this.className;
+		} else if ("auto".equals(Main.inst.mode)
+				&& name.equals("checkExpiration") && desc.equals("()Z")) {
+			// asgatech: patch checkExpiration() call
+			Main.inst.log("Time bomb patched: " + name + desc + " in " + className + '.' + this.name + this.desc);
+			super.visitInsn(Opcodes.POP);
+			super.visitInsn(Opcodes.ICONST_1);
+			Main.inst.asgatechPatched = true;
+			return;
 		}
 		super.visitMethodInsn(opcode, owner, name, desc);
 	}

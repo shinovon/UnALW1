@@ -103,6 +103,8 @@ public class Main implements Runnable {
 	public boolean lmPatched;
 	public boolean vservContextFound;
 	public boolean gloftPatched;
+	public boolean infondPatched;
+	public boolean asgatechPatched;
 	
 	// greystripe
 	public String greystripeConnectionClass;
@@ -120,8 +122,10 @@ public class Main implements Runnable {
 	public String gloftCanvasClass;
 	public String gloftTimeEndedFunc;
 	public String gloftStartedFunc;
-	public String gloftMidletWrapperClass;
 	public boolean hasDataIGP;
+	
+	// vserv
+	public String startMainAppClass;
 	
 	Map<String, ClassNode> classNodes = new HashMap<String, ClassNode>();
 
@@ -394,16 +398,29 @@ public class Main implements Runnable {
 											mn.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
 											mn.instructions.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, className, "vMenuOpStartGame", "()V"));
 											mn.instructions.add(new InsnNode(Opcodes.RETURN));
-										} else if ("auto".equals(mode) || "ia".equals(mode)) {
-											if (iaCanvasClass != null && iaCanvasClass.equals(className)
-													&& (mn.desc.equals("(Ljavax/microedition/midlet/MIDlet;)B") || mn.desc.equals("()B"))) {
-												// ia: remove TimerTask.run() code
-												log("Patched Inneractive (method 2): " + className + '.' + mn.name + mn.desc);
-												Main.inst.inneractivePatched = true;
-												clearFunction(mn);
-												mn.instructions.add(new InsnNode(Opcodes.ICONST_0));
-												mn.instructions.add(new InsnNode(Opcodes.IRETURN));
-											}
+										} else if (("auto".equals(mode) || "ia".equals(mode))
+												&& iaCanvasClass != null && iaCanvasClass.equals(className)
+												&& (mn.desc.equals("(Ljavax/microedition/midlet/MIDlet;)B") || mn.desc.equals("()B"))) {
+											// ia: remove TimerTask.run() code
+											log("Patched Inneractive (method 2): " + className + '.' + mn.name + mn.desc);
+											Main.inst.inneractivePatched = true;
+											clearFunction(mn);
+											mn.instructions.add(new InsnNode(Opcodes.ICONST_0));
+											mn.instructions.add(new InsnNode(Opcodes.IRETURN));
+										} else if (("auto".equals(mode) || "vserv".equals(mode))
+												&& startMainAppClass != null && startMainAppClass.equals(className)
+												&& "startApp".equals(mn.name) && "()V".equals(mn.desc)) {
+											// vserv: add startMainApp at end of startApp
+											log("Patched vServ startApp: " + className + '.' + mn.name + mn.desc);
+											vservConnectorPatched = true;
+											
+											InsnList ins = mn.instructions;
+											ins.remove(ins.getLast()); // remove return
+											ins.add(new LdcInsnNode(1000L));
+											ins.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Thread", "sleep", "(J)V"));
+											ins.add(new VarInsnNode(Opcodes.ALOAD, 0));
+											ins.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, className, "startMainApp", "()V"));
+											ins.add(new InsnNode(Opcodes.RETURN));
 										}
 	
 										// renaming
@@ -457,7 +474,7 @@ public class Main implements Runnable {
 											break;
 										}
 									}
-								// gameloft
+								// gameloft canvas class
 								} else if (gloftCanvasClass != null && className.equals(gloftCanvasClass)) {
 									for (Object m : node.methods) {
 										MethodNode mn = (MethodNode) m;
@@ -466,6 +483,7 @@ public class Main implements Runnable {
 											if (mn.desc.equals("()Z")) {
 												InsnList ins = mn.instructions;
 												for (AbstractInsnNode n : ins.toArray()) {
+													// patch getAppProperty to remove dependency on jad
 													if (n.getOpcode() == Opcodes.INVOKEVIRTUAL && "getAppProperty".equals(((MethodInsnNode) n).name)) {
 														String ldc = (String) ((LdcInsnNode) n.getPrevious()).cst;
 														String replace = null;
@@ -497,34 +515,41 @@ public class Main implements Runnable {
 											if (!mn.desc.equals("()V"))
 												continue;
 											
-											if (mn.name.equals(this.gloftTimeEndedFunc)) {
+											InsnList ins = mn.instructions;
+											boolean hasSetCurrent = false,
+													hasSetFullScreen = false,
+													hasPauseApp = false,
+													hasRepaint = false;
+											for (AbstractInsnNode n : ins.toArray()) {
+												if (n.getOpcode() == Opcodes.INVOKEVIRTUAL) {
+													if ("setCurrent".equals(((MethodInsnNode) n).name)) hasSetCurrent = true;
+													if ("setFullScreenMode".equals(((MethodInsnNode) n).name)) hasSetFullScreen = true;
+													if ("pauseApp".equals(((MethodInsnNode) n).name)) hasPauseApp = true;
+													if ("repaint".equals(((MethodInsnNode) n).name)) hasRepaint = true;
+												}
+											}
+											
+											// start game immediately after demo canvas initialization
+											if (hasSetCurrent && hasSetFullScreen) {
+												log("Gameloft demo patched: " + className + '.' + mn.name + mn.desc);
+												gloftPatched = true;
+												
+												ins.remove(ins.getLast()); // remove return
+												ins.add(new VarInsnNode(Opcodes.ALOAD, 0));
+												ins.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, className, this.gloftStartedFunc, "()V"));
+												ins.add(new InsnNode(Opcodes.RETURN));
+												break mtd;
+											}
+											
+											// delete time ended function code, just in case
+											if (mn.name.equals(this.gloftTimeEndedFunc)
+													|| (hasRepaint && hasPauseApp)) {
 												log("Gameloft demo timer patched: " + className + '.' + mn.name + mn.desc);
 												gloftPatched = true;
 												
 												clearFunction(mn);
 												mn.instructions.add(new InsnNode(Opcodes.RETURN));
 												continue;
-											}
-											
-											InsnList ins = mn.instructions;
-											boolean hasSetCurrent = false;
-											boolean hasSetFullScreen = false;
-											for (AbstractInsnNode n : ins.toArray()) {
-												if (n.getOpcode() == Opcodes.INVOKEVIRTUAL) {
-													if ("setCurrent".equals(((MethodInsnNode) n).name)) hasSetCurrent = true;
-													if ("setFullScreenMode".equals(((MethodInsnNode) n).name)) hasSetFullScreen = true;
-												}
-											}
-											
-											if (hasSetCurrent && hasSetFullScreen) {
-												log("Gameloft demo patched: " + className + '.' + mn.name + mn.desc);
-												gloftPatched = true;
-												
-												ins.remove(ins.getLast());
-												ins.add(new VarInsnNode(Opcodes.ALOAD, 0));
-												ins.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, className, this.gloftStartedFunc, "()V"));
-												ins.add(new InsnNode(Opcodes.RETURN));
-												break mtd;
 											}
 										}
 									}
@@ -566,7 +591,6 @@ public class Main implements Runnable {
 							&& !freexterPatched
 							&& !greystripePatched2
 							&& !glomoPatched
-							&& !smsPatched
 							&& !lmPatched) {
 						if (hasGsid) {
 							logError("Greystripe was detected, but could not patch it, please report to developer!", false);
@@ -579,13 +603,17 @@ public class Main implements Runnable {
 						} else if (!vservConnectorPatched) {
 							if (vservContextFound) {
 								logError("vServ was detected, but could not patch it, please report to developer!", false);
+								failed = true;
+								break run;
+							} else if (smsPatched) {
 							} else {
 								logError("No known ad engines were detected, aborting.", false);
+								failed = true;
+								break run;
 							}
-							failed = true;
-							break run;
+						} else {
+							log("Warning: No known ad engines were detected, prooceding anyway..");
 						}
-						log("Warning: No known ad engines were detected, prooceding anyway..");
 					}
 	
 					if (noOutput) break run;
@@ -883,6 +911,8 @@ public class Main implements Runnable {
 		lmPatched = false;
 		vservContextFound = false;
 		gloftPatched = false;
+		infondPatched = false;
+		asgatechPatched = false;
 		
 		greystripeConnectionClass = null;
 		greystripeRunnerClass = null;
@@ -897,8 +927,9 @@ public class Main implements Runnable {
 		gloftCanvasClass = null;
 		gloftTimeEndedFunc = null;
 		gloftStartedFunc = null;
-		gloftMidletWrapperClass = null;
 		hasDataIGP = false;
+		
+		startMainAppClass = null;
 		
 		failed = false;
 		

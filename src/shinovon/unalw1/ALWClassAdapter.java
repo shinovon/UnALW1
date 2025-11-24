@@ -27,7 +27,7 @@ public class ALWClassAdapter extends ClassVisitor {
 	}
 	
 	public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
-		if (superName != null && !superName.equals("javax/microedition/MIDlet")) {
+		if (superName != null && !superName.equals("javax/microedition/midlet/MIDlet")) {
 			boolean freexter = ("auto".equals(Main.inst.mode) || "freexter".equals(Main.inst.mode)) && "iMidlet".equals(className);
 			if ("startApp".equals(name) && "()V".equals(desc)) {
 				// hovr and freexter: remove wrapped startApp()
@@ -60,6 +60,12 @@ public class ALWClassAdapter extends ClassVisitor {
 				name = "destroyApp";
 				desc = "(Z)V";
 			}
+		} else if (("vserv".equals(Main.inst.mode) || ("auto".equals(Main.inst.mode)))
+				&& "javax/microedition/midlet/MIDlet".equals(superName)
+				&& name.equals("startMainApp") && desc.equals("()V")) {
+			// vserv: startMainApp() call
+			Main.inst.startMainAppClass = className;
+			Main.inst.log("startMainApp found: " + className + '.' + name + desc);
 		}
 		MethodVisitor visitor = super.visitMethod(access, name, desc, signature, exceptions);
 		if (visitor != null) {
