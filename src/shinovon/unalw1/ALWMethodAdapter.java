@@ -90,7 +90,6 @@ public class ALWMethodAdapter extends MethodVisitor {
 		} else if (("glomo".equals(Main.inst.mode) || "auto".equals(Main.inst.mode))
 				&& opcode == Opcodes.INVOKESTATIC && owner.endsWith("RegStarter") && "start".equals(name) && desc.endsWith(")V")) {
 			// glomo: remove RegStarter.start(MIDlet) static call
-			// TODO net lizard
 			Main.inst.log("Glomo patched (method 1): " + name + desc + " in " + className + '.' + this.name + this.desc);
 			Main.inst.glomoPatched = true;
 			super.visitInsn(Opcodes.POP);
@@ -137,13 +136,13 @@ public class ALWMethodAdapter extends MethodVisitor {
 		} else if (("infond".equals(Main.inst.mode) || "auto".equals(Main.inst.mode))
 				&& name.equals("iaa") && desc.equals("()Z")
 				&& Main.inst.infondStartFunc == null) {
-			// infand
+			// infond
 			Main.inst.log("Found infond wrapper: " + owner + " in " + className + '.' + this.name + this.desc);
 			Main.inst.infondStartFunc = this.name;
 		} else if (("sm".equals(Main.inst.mode) || "auto".equals(Main.inst.mode))
 				&& name.equals("showAtStart") && desc.equals("()V")
 				&& "javax/microedition/midlet/MIDlet".equals(superName)) {
-			// sm
+			// sm: replace showAtStart() call to startMainApp()
 			Main.inst.log("Patched sm: " + name + desc + " in " + className + '.' + this.name + this.desc);
 			super.visitInsn(Opcodes.POP);
 			super.visitVarInsn(Opcodes.ALOAD, 0);
@@ -186,6 +185,10 @@ public class ALWMethodAdapter extends MethodVisitor {
 			Main.inst.log("Gameloft string constant found (wrapped game started): " + this.className + '.' + this.name + this.desc);
 			Main.inst.gloftCanvasClass = this.className;
 			Main.inst.gloftStartedFunc = this.name;
+		} else if (cst instanceof String && cst.equals("+lm") && !this.name.equals("<init>")) {
+			// glomo
+			Main.inst.log("Glomo string constant found: " + this.className + '.' + this.name + this.desc);
+			Main.inst.glomoRegClass = className;
 		}
 		super.visitLdcInsn(cst);
 	}

@@ -10,7 +10,7 @@ Currently supports:
 - Hovr
 - Freexter
 - Greystripe (partially)
-- Glomo (not all vendors/games)
+- Glomo
 - LM (Aircel)
 - Gameloft
 - Infond

@@ -141,6 +141,9 @@ public class Main implements Runnable {
 	// infond
 	public String infondStartFunc;
 	
+	// glomo
+	public String glomoRegClass;
+	
 	Map<String, ClassNode> classNodes = new HashMap<String, ClassNode>();
 
 	boolean running;
@@ -349,7 +352,7 @@ public class Main implements Runnable {
 								log("Found glomo.cfg, assuming Glomo");
 							}
 						}
-						if ("gamelog".equals(mode) || "auto".equals(mode)) {
+						if ("gloft".equals(mode) || "auto".equals(mode)) {
 							// gameloft: check for dataIGP resource
 							if (hasDataIGP = zipFile.getEntry("dataIGP") != null || zipFile.getEntry("/dataIGP") != null) {
 								log("Found dataIGP, assuming Gameloft");
@@ -461,11 +464,78 @@ public class Main implements Runnable {
 											ins.add(new InsnNode(Opcodes.RETURN));
 										} else if (("auto".equals(mode) || "sm".equals(mode))
 												&& (("getAdsBannerInThread".equals(mn.name) && "(Z)V".equals(mn.desc)))) {
+											// sm: remove getAdsBannerInThread code
 											log("Patched sm: " + className + '.' + mn.name + mn.desc);
 											smPatched = true;
 											
 											clearFunction(mn);
 											mn.instructions.add(new InsnNode(Opcodes.RETURN));
+										} else if (("auto".equals(mode) || "glomo".equals(mode))
+												 && hasGlomoCfg && className.equals(glomoRegClass)) {
+											if ("()Z".equals(mn.desc) || "(Z)Z".equals(mn.desc)) {
+												InsnList ins = mn.instructions;
+												boolean hasGoodLdc = false;
+												boolean hasCompareTo = false;
+												for (AbstractInsnNode n = ins.getFirst(); n != null; n = n.getNext()) {
+													// parseLong() == ActivationKey()
+													if (n.getOpcode() == Opcodes.INVOKESTATIC && n instanceof MethodInsnNode
+															&& ((MethodInsnNode) n).name.equals("parseLong")
+															&& (n = n.getNext()) instanceof MethodInsnNode && ((MethodInsnNode) n).desc.equals("()J")
+															&& (n = n.getNext()) != null && n.getOpcode() == Opcodes.LCMP
+															&& (n = n.getNext()) != null && n.getOpcode() == Opcodes.IFNE
+															&& (n = n.getNext()) != null && n.getOpcode() == Opcodes.ICONST_1) {
+														// glomo: replace isRegistered() and isSubscribed() code to always return true
+														log("Glomo patched (method 2, isRegistered or isSubscribed): " + className + '.' + mn.name + mn.desc);
+														glomoPatched = true;
+														
+														clearFunction(mn);
+														mn.instructions.add(new InsnNode(Opcodes.ICONST_1));
+														mn.instructions.add(new InsnNode(Opcodes.IRETURN));
+														break;
+													}
+													if (n.getOpcode() == Opcodes.LDC && n instanceof LdcInsnNode
+															&& "good".equals(((LdcInsnNode) n).cst)) {
+														hasGoodLdc = true;
+													}
+													if (n.getOpcode() == Opcodes.INVOKEVIRTUAL && n instanceof MethodInsnNode
+															&& ((MethodInsnNode) n).name.equals("compareTo")) {
+														hasCompareTo = true;
+													}
+												}
+												if (hasGoodLdc && hasCompareTo) {
+													// glomo net lizard: isActivated()
+													log("Glomo patched (method 2, isActivated): " + className + '.' + mn.name + mn.desc);
+													glomoPatched = true;
+													
+													clearFunction(mn);
+													mn.instructions.add(new InsnNode(Opcodes.ICONST_1));
+													mn.instructions.add(new InsnNode(Opcodes.IRETURN));
+													break;
+												}
+											}
+											if ("(Ljava/lang/String;I)Z".equals(mn.desc)) {
+												// glomo: find checkSerial()
+												InsnList ins = mn.instructions;
+												for (AbstractInsnNode n = ins.getFirst(); n != null; n = n.getNext()) {
+													// parseLong() == ActivationKey()
+													if (n.getOpcode() == Opcodes.INVOKEVIRTUAL && n instanceof MethodInsnNode
+															&& ((MethodInsnNode) n).name.equals("getTime")) {
+														log("Glomo patched (method 2, checkSerial): " + className + '.' + mn.name + mn.desc);
+														glomoPatched = true;
+														
+														clearFunction(mn);
+														mn.instructions.add(new InsnNode(Opcodes.ICONST_1));
+														mn.instructions.add(new InsnNode(Opcodes.IRETURN));
+														break;
+													}
+												}
+											}
+											if ("()Ljava/lang/String;".equals(mn.desc) || "(Ljava/lang/String;)Ljava/lang/String;".equals(mn.desc)) {
+												log("Glomo patched (method 2, string): " + className + '.' + mn.name + mn.desc);
+												clearFunction(mn);
+												mn.instructions.add(new LdcInsnNode(""));
+												mn.instructions.add(new InsnNode(Opcodes.ARETURN));
+											}
 										}
 	
 										// renaming
