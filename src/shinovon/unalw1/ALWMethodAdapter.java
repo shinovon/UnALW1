@@ -139,6 +139,16 @@ public class ALWMethodAdapter extends MethodVisitor {
 			// infand
 			Main.inst.log("Found infond wrapper: " + owner + " in " + className + '.' + this.name + this.desc);
 			Main.inst.infondStartFunc = this.name;
+		} else if (("sm".equals(Main.inst.mode) || "auto".equals(Main.inst.mode))
+				&& name.equals("showAtStart") && desc.equals("()V")
+				&& "javax/microedition/midlet/MIDlet".equals(superName)) {
+			// sm
+			Main.inst.log("Patched sm: " + name + desc + " in " + className + '.' + this.name + this.desc);
+			super.visitInsn(Opcodes.POP);
+			super.visitVarInsn(Opcodes.ALOAD, 0);
+			super.visitMethodInsn(Opcodes.INVOKEVIRTUAL, className, "startMainApp", "()V");
+			Main.inst.smPatched = true;
+			return;
 		}
 		super.visitMethodInsn(opcode, owner, name, desc);
 	}

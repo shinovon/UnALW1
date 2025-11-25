@@ -16,6 +16,7 @@ import java.awt.dnd.DropTargetEvent;
 import java.awt.dnd.DropTargetListener;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -76,6 +77,7 @@ public class Main implements Runnable {
 			"lm",
 			"gloft",
 			"infond",
+			"sm",
 			"sms",
 	};
 	
@@ -91,6 +93,7 @@ public class Main implements Runnable {
 			"LM",
 			"Gameloft",
 			"Infond",
+			"Sensible Mobiles",
 			"SMS",
 	};
 	
@@ -111,6 +114,7 @@ public class Main implements Runnable {
 	public boolean gloftPatched;
 	public boolean infondPatched;
 	public boolean asgatechPatched;
+	public boolean smPatched;
 	
 	// greystripe
 	public String greystripeConnectionClass;
@@ -413,17 +417,27 @@ public class Main implements Runnable {
 										} else if (("auto".equals(mode) || "vserv".equals(mode))
 												&& startMainAppClass != null && startMainAppClass.equals(className)
 												&& "startApp".equals(mn.name) && "()V".equals(mn.desc)) {
-											// vserv: add startMainApp call at end of startApp
-											log("Patched vServ startApp: " + className + '.' + mn.name + mn.desc);
-											vservConnectorPatched = true;
 											
 											InsnList ins = mn.instructions;
-											ins.remove(ins.getLast()); // remove return
-											ins.add(new LdcInsnNode(500L));
-											ins.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Thread", "sleep", "(J)V"));
-											ins.add(new VarInsnNode(Opcodes.ALOAD, 0));
-											ins.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, className, "startMainApp", "()V"));
-											ins.add(new InsnNode(Opcodes.RETURN));
+											boolean hasStartMainApp = false;
+											for (AbstractInsnNode n = ins.getFirst(); n != null; n = n.getNext()) {
+												if (n instanceof MethodInsnNode && ((MethodInsnNode) n).name.equals("startMainApp")) {
+													hasStartMainApp = true;
+												}
+											}
+											
+											if (!hasStartMainApp) {
+												// vserv: add startMainApp call at end of startApp
+												log("Patched vServ startApp: " + className + '.' + mn.name + mn.desc);
+												vservConnectorPatched = true;
+												
+												ins.remove(ins.getLast()); // remove return
+												ins.add(new LdcInsnNode(500L));
+												ins.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Thread", "sleep", "(J)V"));
+												ins.add(new VarInsnNode(Opcodes.ALOAD, 0));
+												ins.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, className, "startMainApp", "()V"));
+												ins.add(new InsnNode(Opcodes.RETURN));
+											}
 										} else if (("auto".equals(mode) || "infond".equals(mode))
 												&& className.startsWith("infond")
 												&& "startApp".equals(mn.name) && "()V".equals(mn.desc)) {
@@ -438,6 +452,13 @@ public class Main implements Runnable {
 											ins.add(new VarInsnNode(Opcodes.ALOAD, 0));
 											ins.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, className, infondStartFunc, "()V"));
 											ins.add(new InsnNode(Opcodes.RETURN));
+										} else if (("auto".equals(mode) || "sm".equals(mode))
+												&& (("getAdsBannerInThread".equals(mn.name) && "(Z)V".equals(mn.desc)))) {
+											log("Patched sm: " + className + '.' + mn.name + mn.desc);
+											smPatched = true;
+											
+											clearFunction(mn);
+											mn.instructions.add(new InsnNode(Opcodes.RETURN));
 										}
 	
 										// renaming
@@ -610,7 +631,8 @@ public class Main implements Runnable {
 							&& !glomoPatched
 							&& !lmPatched
 							&& !infondPatched
-							&& !asgatechPatched) {
+							&& !asgatechPatched
+							&& !smPatched) {
 						if (hasGsid) {
 							logError("Greystripe was detected, but could not patch it, please report to developer!", false);
 							failed = true;
@@ -932,6 +954,7 @@ public class Main implements Runnable {
 		gloftPatched = false;
 		infondPatched = false;
 		asgatechPatched = false;
+		smPatched = false;
 		
 		greystripeConnectionClass = null;
 		greystripeRunnerClass = null;
