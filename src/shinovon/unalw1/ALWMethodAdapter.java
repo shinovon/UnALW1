@@ -167,7 +167,7 @@ public class ALWMethodAdapter extends MethodVisitor {
 		} else if (cst instanceof String && cst.equals("GlowingMobile")) {
 			// glomo
 			Main.inst.hasGlomoCfg = true;
-			Main.inst.log("GlomoDistributor string constant found: " + this.className + '.' + this.name + this.desc);
+			Main.inst.log("GlomoDistributer string constant found: " + this.className + '.' + this.name + this.desc);
 		} else if (cst instanceof String && cst.equals("IA-X-errorInDisclaimerNotice") && name.equals("<init>")) {
 			// ia
 			Main.inst.log("Inneractive string constant found: " + this.className + '.' + this.name + this.desc);
