@@ -348,9 +348,12 @@ public class Main implements Runnable {
 						}
 						if ("glomo".equals(mode) || "auto".equals(mode)) {
 							// glomo: check for glomo.cfg resource
-							if (hasGlomoCfg = zipFile.getEntry("glomo.cfg") != null || zipFile.getEntry("/glomo.cfg") != null
-									|| zipFile.getEntry("cfg.cfg") != null || zipFile.getEntry("/cfg.cfg") != null) {
+							if (zipFile.getEntry("glomo.cfg") != null || zipFile.getEntry("/glomo.cfg") != null) {
+								hasGlomoCfg = true;
 								log("Found glomo.cfg, assuming Glomo");
+							} else if (zipFile.getEntry("cfg.cfg") != null || zipFile.getEntry("/cfg.cfg") != null) {
+								hasGlomoCfg = true;
+								log("Found cfg.cfg, assuming Glomo");
 							}
 						}
 						if ("gloft".equals(mode) || "auto".equals(mode)) {

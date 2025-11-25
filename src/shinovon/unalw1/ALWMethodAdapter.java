@@ -165,8 +165,9 @@ public class ALWMethodAdapter extends MethodVisitor {
 			Main.inst.vservContextFound = true;
 			Main.inst.vservClass = className;
 		} else if (cst instanceof String && cst.equals("GlowingMobile")) {
-			// gloft
-			Main.inst.log("Glomo string constant found: " + this.className + '.' + this.name + this.desc);
+			// glomo
+			Main.inst.hasGlomoCfg = true;
+			Main.inst.log("GlomoDistributor string constant found: " + this.className + '.' + this.name + this.desc);
 		} else if (cst instanceof String && cst.equals("IA-X-errorInDisclaimerNotice") && name.equals("<init>")) {
 			// ia
 			Main.inst.log("Inneractive string constant found: " + this.className + '.' + this.name + this.desc);
@@ -188,7 +189,7 @@ public class ALWMethodAdapter extends MethodVisitor {
 		} else if (cst instanceof String && (cst.equals("+lm") || cst.equals("Prefix: ["))
 				&& !this.name.equals("<init>")) {
 			// glomo
-			Main.inst.log("Glomo string constant found: " + this.className + '.' + this.name + this.desc);
+			Main.inst.log("GlomoRegistrator string constant found: " + this.className + '.' + this.name + this.desc);
 			Main.inst.glomoRegClass = className;
 		}
 		super.visitLdcInsn(cst);
