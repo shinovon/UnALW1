@@ -49,7 +49,8 @@ public class ALWMethodAdapter extends MethodVisitor {
 	public void visitMethodInsn(int opcode, String owner, String name, String desc) {
 		if (("vserv".equals(Main.inst.mode)
 				|| ("auto".equals(Main.inst.mode)
-						&& (className.endsWith("VservManager") || className.endsWith("VservAd") || className.endsWith("VSERV_BCI_CLASS_000"))))
+						&& (className.endsWith("VservManager") || className.endsWith("VservAd") || className.endsWith("VSERV_BCI_CLASS_000")
+								|| className.equals(Main.inst.vservClass))))
 				&& "javax/microedition/io/Connector".equals(owner)) {
 			// vserv: wrap connector static calls
 			Main.inst.log("Connector call wrapped: " + name + desc + " in " + className + '.' + this.name + this.desc);
@@ -163,6 +164,7 @@ public class ALWMethodAdapter extends MethodVisitor {
 			// vserv
 			Main.inst.log("vServ string constant found: " + this.className + '.' + this.name + this.desc);
 			Main.inst.vservContextFound = true;
+			Main.inst.vservClass = className;
 		} else if (cst instanceof String && cst.equals("GlowingMobile")) {
 			// gloft
 			Main.inst.log("Glomo string constant found: " + this.className + '.' + this.name + this.desc);

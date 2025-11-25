@@ -136,6 +136,7 @@ public class Main implements Runnable {
 	
 	// vserv
 	public String startMainAppClass;
+	public String vservClass;
 	
 	// infond
 	public String infondStartFunc;
@@ -338,18 +339,24 @@ public class Main implements Runnable {
 					try (ZipFile zipFile = new ZipFile(f.toFile())) {
 						if ("gs".equals(mode) || "auto".equals(mode)) {
 							// greystripe: check for .gsid resource
-							hasGsid = zipFile.getEntry(".gsid") != null || zipFile.getEntry("/.gsid") != null;
+							if (hasGsid = zipFile.getEntry(".gsid") != null || zipFile.getEntry("/.gsid") != null) {
+								log("Found .gsid, assuming Greystripe");
+							}
 						}
 						if ("glomo".equals(mode) || "auto".equals(mode)) {
 							// glomo: check for glomo.cfg resource
-							hasGlomoCfg = zipFile.getEntry("glomo.cfg") != null || zipFile.getEntry("/glomo.cfg") != null;
+							if (hasGlomoCfg = zipFile.getEntry("glomo.cfg") != null || zipFile.getEntry("/glomo.cfg") != null) {
+								log("Found glomo.cfg, assuming Glomo");
+							}
 						}
 						if ("gamelog".equals(mode) || "auto".equals(mode)) {
 							// gameloft: check for dataIGP resource
-							hasDataIGP = zipFile.getEntry("dataIGP") != null || zipFile.getEntry("/dataIGP") != null;
+							if (hasDataIGP = zipFile.getEntry("dataIGP") != null || zipFile.getEntry("/dataIGP") != null) {
+								log("Found dataIGP, assuming Gameloft");
+							}
 						}
 						
-						try (ZipOutputStream zipOut = new ZipOutputStream(new FileOutputStream(temp.toFile()))) {
+						try (ZipOutputStream zipOut = new ZipOutputStream(new BufferedOutputStream(Files.newOutputStream(temp)))) {
 							Enumeration<? extends ZipEntry> entries = zipFile.entries();
 							while (entries.hasMoreElements()) {
 								ZipEntry entry = entries.nextElement();
@@ -972,6 +979,7 @@ public class Main implements Runnable {
 		hasDataIGP = false;
 		
 		startMainAppClass = null;
+		vservClass = null;
 		
 		infondStartFunc = null;
 		
