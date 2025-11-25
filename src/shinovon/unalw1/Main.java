@@ -18,9 +18,12 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -28,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
@@ -152,7 +156,7 @@ public class Main implements Runnable {
 	String outjar;
 	String outdir;
 	String mode = "auto";
-	boolean verbose = false;
+	boolean verbose;
 	
 	Object target;
 	boolean cli;
@@ -210,6 +214,10 @@ public class Main implements Runnable {
 						return;
 					}
 					key = null;
+				} else if ("-s".equals(s)) {
+					inst.noOutput = true;
+				} else if ("-verbose".equals(s)) {
+					inst.verbose = true;
 				} else {
 					key = s;
 				}
@@ -266,9 +274,9 @@ public class Main implements Runnable {
 				return;
 			}
 			try {
-				File f;
-				proguard = (f = new File(proguard)).getCanonicalPath();
-				if (!f.exists()) {
+				Path f;
+				proguard = (f = Paths.get(proguard).toAbsolutePath().normalize()).toString();
+				if (!Files.exists(f)) {
 					logError("Proguard not found", true);
 					return;
 				}
@@ -291,27 +299,17 @@ public class Main implements Runnable {
 		}
 	}
 	
-	private void process(String t) {
-		File f = new File(t);
-		if (f.isDirectory()) {
-			for (File s: f.listFiles()) {
-				process(s);
-			}
-		} else {
-			process(f);
-		}
+	private void process(String path) {
+		try (Stream<Path> paths = Files.walk(Paths.get(path))) {
+			paths.filter(Files::isRegularFile).forEach(this::process);
+		} catch (IOException e) {
+	        e.printStackTrace();
+	    }
 	}
 	
-	private void process(File f) {
-		if (f.isDirectory()) {
-			for (File s: f.listFiles()) {
-				process(s);
-			}
-			return;
-		}
-		if (!f.isFile()) return;
+	private void process(Path f) {
 		{
-			String n = f.getName().toLowerCase();
+			String n = f.getFileName().toString().toLowerCase();
 			if (!n.endsWith(".zip") && !n.endsWith(".jar")) return;
 			log("File: " + f, true);
 		}
@@ -325,15 +323,15 @@ public class Main implements Runnable {
 				if (this.outjar != null) {
 					outjar = this.outjar;
 				} else if (this.outdir != null) {
-					outjar = Paths.get(outdir).resolve(f.getName()).toString();
+					outjar = Paths.get(outdir).resolve(f.getFileName()).toString();
 				} else {
-					outjar = f.getCanonicalPath();
+					outjar = f.toString();
 					outjar = outjar.substring(0, outjar.length() - 4) + "_unwrapped.jar";
 				}
 				
-				File temp = File.createTempFile("unalw1", ".jar");
+				Path temp = Files.createTempFile("unalw1", ".jar");
 				try {
-					try (ZipFile zipFile = new ZipFile(f)) {
+					try (ZipFile zipFile = new ZipFile(f.toFile())) {
 						if ("gs".equals(mode) || "auto".equals(mode)) {
 							// greystripe: check for .gsid resource
 							hasGsid = zipFile.getEntry(".gsid") != null || zipFile.getEntry("/.gsid") != null;
@@ -347,7 +345,7 @@ public class Main implements Runnable {
 							hasDataIGP = zipFile.getEntry("dataIGP") != null || zipFile.getEntry("/dataIGP") != null;
 						}
 						
-						try (ZipOutputStream zipOut = new ZipOutputStream(new FileOutputStream(temp))) {
+						try (ZipOutputStream zipOut = new ZipOutputStream(new FileOutputStream(temp.toFile()))) {
 							Enumeration<? extends ZipEntry> entries = zipFile.entries();
 							while (entries.hasMoreElements()) {
 								ZipEntry entry = entries.nextElement();
@@ -640,9 +638,9 @@ public class Main implements Runnable {
 					if (noOutput) break run;
 					
 					// preverify with proguard
-					File tempConfig = File.createTempFile("unalw1", ".cfg");
+					Path tempConfig = Files.createTempFile("unalw1", ".cfg");
 					try {
-						try (PrintStream ps = new PrintStream(new FileOutputStream(tempConfig))) {
+						try (PrintStream ps = new PrintStream(new FileOutputStream(tempConfig.toFile()))) {
 							ps.println("-dontwarn");
 							ps.println("-dontnote");
 							ps.println("-dontobfuscate");
@@ -654,16 +652,16 @@ public class Main implements Runnable {
 							ps.print("-libraryjars ");
 							ps.println(escapeFileArg(libraryjars));
 							ps.print("-injars ");
-							ps.println(temp.getCanonicalPath());
+							ps.println(temp.toAbsolutePath().toString());
 							ps.print("-outjar ");
-							ps.println(escapeFileArg(new File(outjar).getCanonicalPath()));
+							ps.println(escapeFileArg(Paths.get(outjar).toAbsolutePath().normalize().toString()));
 						}
 						
 						List<String> args = new ArrayList<String>();
-						args.add(System.getProperty("java.home") + File.separatorChar + "bin" + File.separatorChar + "java");
+						args.add(Paths.get(System.getProperty("java.home")).resolve("bin").resolve("java").toString());
 						args.add("-jar");
 						args.add(proguard);
-						args.add("@" + tempConfig.getAbsolutePath());
+						args.add("@" + tempConfig.toAbsolutePath().toString());
 						
 						ProcessBuilder builder = new ProcessBuilder(args);
 						builder.inheritIO();
@@ -674,12 +672,12 @@ public class Main implements Runnable {
 							break run;
 						}
 					} finally {
-						tempConfig.delete();
+						Files.delete(tempConfig);
 					}
 					
 					log("Wrote to " + outjar);
 				} finally {
-					temp.delete();
+					Files.delete(temp);
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -839,8 +837,8 @@ public class Main implements Runnable {
 						outdir = null;
 						outjar = null;
 					} else {
-						File f = new File(s);
-						if (f.isDirectory()) {
+						Path f = Paths.get(s);
+						if (Files.isDirectory(f)) {
 							outdir = s;
 							outjar = null;
 						} else {

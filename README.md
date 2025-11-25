@@ -14,3 +14,4 @@ Currently supports:
 - LM (Aircel)
 - Gameloft
 - Infond
+- SMS sending removal
