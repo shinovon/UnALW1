@@ -348,7 +348,8 @@ public class Main implements Runnable {
 						}
 						if ("glomo".equals(mode) || "auto".equals(mode)) {
 							// glomo: check for glomo.cfg resource
-							if (hasGlomoCfg = zipFile.getEntry("glomo.cfg") != null || zipFile.getEntry("/glomo.cfg") != null) {
+							if (hasGlomoCfg = zipFile.getEntry("glomo.cfg") != null || zipFile.getEntry("/glomo.cfg") != null
+									|| zipFile.getEntry("cfg.cfg") != null || zipFile.getEntry("/cfg.cfg") != null) {
 								log("Found glomo.cfg, assuming Glomo");
 							}
 						}
