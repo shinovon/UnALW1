@@ -154,8 +154,8 @@ public class ALWMethodAdapter extends MethodVisitor {
 	}
 	
 	public void visitLdcInsn(Object cst) {
-		if (Main.inst.hasGsid && this.className.indexOf('/') != -1 && this.desc.equals("()V")
-				&& cst instanceof String && cst.equals("Connection failed")) {
+		if (cst instanceof String && cst.equals("Connection failed")
+				&& Main.inst.hasGsid && this.className.indexOf('/') != -1 && this.desc.equals("()V") ) {
 			// greystripe: find start function by exception message "Connection failed"
 			Main.inst.log("Greystripe start function found: " + this.className + '.' + this.name + this.desc);
 			Main.inst.greystripeStartFunc = this.name;
@@ -185,7 +185,8 @@ public class ALWMethodAdapter extends MethodVisitor {
 			Main.inst.log("Gameloft string constant found (wrapped game started): " + this.className + '.' + this.name + this.desc);
 			Main.inst.gloftCanvasClass = this.className;
 			Main.inst.gloftStartedFunc = this.name;
-		} else if (cst instanceof String && cst.equals("+lm") && !this.name.equals("<init>")) {
+		} else if (cst instanceof String && (cst.equals("+lm") || cst.equals("Prefix: ["))
+				&& !this.name.equals("<init>")) {
 			// glomo
 			Main.inst.log("Glomo string constant found: " + this.className + '.' + this.name + this.desc);
 			Main.inst.glomoRegClass = className;
