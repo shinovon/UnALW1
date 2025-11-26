@@ -3,17 +3,22 @@ Tool for removing ad and payment engines from J2ME games
 
 ![image](prev.png)
 
-Currently supports:
+## Currently supports
+Payment engines, demo wrappers:
 - ALW1/ALW2
-- vServ
-- Inneractive
-- Hovr
 - Freexter
-- Greystripe (partially)
 - Glomo
 - LM (Aircel)
 - Gameloft
-- Infond
-- ASGATech
+- Infon Demotoolkit
+
+Advertisement engines:
+- vServ
+- Inneractive
+- Hovr
+- Greystripe (partially)
 - Sensible Mobiles
+
+Misc:
 - SMS sending removal
+- ASGATech time-bomb
