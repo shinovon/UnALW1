@@ -340,6 +340,10 @@ public class Main implements Runnable {
 				Path temp = Files.createTempFile("unalw1", ".jar");
 				try {
 					try (ZipFile zipFile = new ZipFile(f.toFile())) {
+						if (zipFile.getEntry("UnALW1") != null) {
+							logError("Jar file appears to be already patched, aborting.", false);
+							break run;
+						}
 						if ("gs".equals(mode) || "auto".equals(mode)) {
 							// greystripe: check for .gsid resource
 							if (hasGsid = zipFile.getEntry(".gsid") != null || zipFile.getEntry("/.gsid") != null) {
@@ -697,6 +701,14 @@ public class Main implements Runnable {
 										zipOut.closeEntry();
 									}
 								}
+							}
+							
+							if (!noOutput) {
+								ZipEntry copy = new ZipEntry("UnALW1");
+								copy.setCompressedSize(-1);
+								zipOut.putNextEntry(copy);
+								zipOut.write(("UnALW1 v" + VERSION + " (https://github.com/shinovon/UnALW1)").getBytes());
+								zipOut.closeEntry();
 							}
 						}
 					}
