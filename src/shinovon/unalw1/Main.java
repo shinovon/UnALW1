@@ -57,6 +57,7 @@ import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 import javax.swing.JComboBox;
 import javax.swing.DefaultComboBoxModel;
@@ -143,6 +144,9 @@ public class Main implements Runnable {
 	
 	// glomo
 	public String glomoRegClass;
+	
+	//
+	public boolean hasCfgData;
 	
 	Map<String, ClassNode> classNodes = new HashMap<String, ClassNode>();
 
@@ -366,6 +370,12 @@ public class Main implements Runnable {
 								log("Found dataIGP, assuming Gameloft");
 							}
 						}
+						if ("auto".equals(mode)) {
+							// TODO
+							if (hasCfgData = zipFile.getEntry("cfg.data") != null || zipFile.getEntry("/cfg.data") != null) {
+								log("Found cfg.data, ");
+							}
+						}
 						
 						try (ZipOutputStream zipOut = new ZipOutputStream(new BufferedOutputStream(Files.newOutputStream(temp)))) {
 							Enumeration<? extends ZipEntry> entries = zipFile.entries();
@@ -543,6 +553,42 @@ public class Main implements Runnable {
 												clearFunction(mn);
 												mn.instructions.add(new LdcInsnNode(""));
 												mn.instructions.add(new InsnNode(Opcodes.ARETURN));
+											}
+										}
+										
+										if (hasCfgData && (mn.access & Opcodes.ACC_STATIC) != 0) {
+											// TODO
+											boolean hasNewIOException = false, hasIconst3 = false, hasIconst4 = false, hasIconst5 = false;
+											String stateFunc = null;
+											
+											InsnList ins = mn.instructions;
+											for (AbstractInsnNode n = ins.getFirst(); n != null; n = n.getNext()) {
+												if (n instanceof TypeInsnNode && n.getOpcode() == Opcodes.NEW
+														&& ((TypeInsnNode) n).desc.equals("java/io/IOException")) {
+													hasNewIOException = true;
+												}
+												if (n instanceof InsnNode) {
+													if (n.getOpcode() == Opcodes.ICONST_3) {
+														hasIconst3 = true;
+													} else if (n.getOpcode() == Opcodes.ICONST_4) {
+														hasIconst4 = true;
+													} else if (n.getOpcode() == Opcodes.ICONST_5) {
+														hasIconst5 = true;
+													}
+												}
+												if (n instanceof MethodInsnNode
+														&& ((MethodInsnNode) n).owner.equals(className) && ((MethodInsnNode) n).desc.equals("(B)V")) {
+													stateFunc = ((MethodInsnNode) n).name;
+												}
+											}
+											if (hasNewIOException && hasIconst3 && hasIconst4 && hasIconst5 && stateFunc != null) {
+												Main.inst.alw1Patched = true;
+												log("Patched: " + className + '.' + mn.name + mn.desc);
+												clearFunction(mn);
+												mn.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+												mn.instructions.add(new InsnNode(Opcodes.ICONST_4));
+												mn.instructions.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, className, stateFunc, "(B)V"));
+												mn.instructions.add(new InsnNode(Opcodes.RETURN));
 											}
 										}
 	
@@ -1068,6 +1114,10 @@ public class Main implements Runnable {
 		vservClass = null;
 		
 		infondStartFunc = null;
+		
+		glomoRegClass = null;
+		
+		hasCfgData = false;
 		
 		failed = false;
 		
