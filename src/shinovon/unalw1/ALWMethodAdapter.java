@@ -143,6 +143,7 @@ public class ALWMethodAdapter extends MethodVisitor {
 				&& name.equals("showAtStart") && desc.equals("()V")
 				&& "javax/microedition/midlet/MIDlet".equals(superName)) {
 			// sm: replace showAtStart() call to startMainApp()
+			// TODO check if startMainApp exists
 			Main.inst.log("Patched sm: " + name + desc + " in " + className + '.' + this.name + this.desc);
 			super.visitInsn(Opcodes.POP);
 			super.visitVarInsn(Opcodes.ALOAD, 0);

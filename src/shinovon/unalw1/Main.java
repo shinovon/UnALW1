@@ -183,12 +183,9 @@ public class Main implements Runnable {
 			System.out.println();
 			if (args[0].endsWith("-version")) return;
 			if (args[0].endsWith("-help")) {
-				System.out.println("Supports: ALW1, vServ, InnerActive, Hovr, Freexter, Greystripe, Glomo");
-				System.out.println();
-				System.out.println("Usage: java -jar unalw1.jar [arguments]"); 
+				System.out.println("Usage: java -jar unalw1.jar [options] <jar file or directory>"); 
 				System.out.println();
 				System.out.println("Where options are:");
-				System.out.println(" -in <jar file or directory>");
 				System.out.println(" -outjar <jar file> Path to output jar");
 				System.out.println(" -outdir <path> Path to output dir");
 				System.out.println(" -proguard <proguard.jar> Path to proguard.jar, e.g: C:\\proguard-7.7.0\\lib\\proguard.jar");
@@ -235,9 +232,7 @@ public class Main implements Runnable {
 				}
 			}
 			if (key != null) {
-				System.err.println("Incomplete parameter: " + key);
-				System.exit(1);
-				return;
+				inst.target = key;
 			}
 			
 			if (inst.target == null) {
@@ -373,7 +368,7 @@ public class Main implements Runnable {
 						if ("auto".equals(mode)) {
 							// TODO
 							if (hasCfgData = zipFile.getEntry("cfg.data") != null || zipFile.getEntry("/cfg.data") != null) {
-								log("Found cfg.data, ");
+								log("Found cfg.data");
 							}
 						}
 						
@@ -652,7 +647,7 @@ public class Main implements Runnable {
 											if (mn.desc.equals("()Z")) {
 												InsnList ins = mn.instructions;
 												for (AbstractInsnNode n : ins.toArray()) {
-													// patch getAppProperty to remove dependency on jad
+													// patch getAppProperty calls to remove dependency on jad
 													if (n.getOpcode() == Opcodes.INVOKEVIRTUAL && "getAppProperty".equals(((MethodInsnNode) n).name)) {
 														String ldc = (String) ((LdcInsnNode) n.getPrevious()).cst;
 														String replace = null;
