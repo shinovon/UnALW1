@@ -116,6 +116,7 @@ public class Main implements Runnable {
 	public boolean infondPatched;
 	public boolean asgatechPatched;
 	public boolean smPatched;
+	public boolean ptaxcblPatched;
 	
 	// greystripe
 	public String greystripeConnectionClass;
@@ -366,7 +367,7 @@ public class Main implements Runnable {
 							}
 						}
 						if ("auto".equals(mode)) {
-							// TODO
+							// ptaxcbl: check for cfg.data resource
 							if (hasCfgData = zipFile.getEntry("cfg.data") != null || zipFile.getEntry("/cfg.data") != null) {
 								log("Found cfg.data");
 							}
@@ -552,7 +553,7 @@ public class Main implements Runnable {
 										}
 										
 										if (hasCfgData && (mn.access & Opcodes.ACC_STATIC) != 0) {
-											// TODO
+											// ptaxcbl: find and patch online activation function by patterns
 											boolean hasNewIOException = false, hasIconst3 = false, hasIconst4 = false, hasIconst5 = false;
 											String stateFunc = null;
 											
@@ -577,8 +578,8 @@ public class Main implements Runnable {
 												}
 											}
 											if (hasNewIOException && hasIconst3 && hasIconst4 && hasIconst5 && stateFunc != null) {
-												Main.inst.alw1Patched = true;
-												log("Patched: " + className + '.' + mn.name + mn.desc);
+												Main.inst.ptaxcblPatched = true;
+												log("Patched ptaxcbl: " + className + '.' + mn.name + mn.desc);
 												clearFunction(mn);
 												mn.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
 												mn.instructions.add(new InsnNode(Opcodes.ICONST_4));
@@ -766,7 +767,8 @@ public class Main implements Runnable {
 							&& !lmPatched
 							&& !infondPatched
 							&& !asgatechPatched
-							&& !smPatched) {
+							&& !smPatched
+							&& !ptaxcblPatched) {
 						if (hasGsid) {
 							logError("Greystripe was detected, but could not patch it, please report to developer!", false);
 							failed = true;
@@ -1089,6 +1091,7 @@ public class Main implements Runnable {
 		infondPatched = false;
 		asgatechPatched = false;
 		smPatched = false;
+		ptaxcblPatched = false;
 		
 		greystripeConnectionClass = null;
 		greystripeRunnerClass = null;
