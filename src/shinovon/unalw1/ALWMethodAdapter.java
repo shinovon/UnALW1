@@ -25,6 +25,7 @@ public class ALWMethodAdapter extends MethodVisitor {
 		this.desc = desc;
 	}
 	
+	@SuppressWarnings("deprecation")
 	public void visitInsn(int opcode) {
 		if (("alw1".equals(Main.inst.mode) || "auto".equals(Main.inst.mode))
 				&& (className.endsWith("ALW1") || className.endsWith("ALW2"))
@@ -46,6 +47,7 @@ public class ALWMethodAdapter extends MethodVisitor {
 		super.visitInsn(opcode);
 	}
 	
+	@SuppressWarnings("deprecation")
 	public void visitMethodInsn(int opcode, String owner, String name, String desc) {
 		if (("vserv".equals(Main.inst.mode)
 				|| ("auto".equals(Main.inst.mode)

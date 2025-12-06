@@ -296,7 +296,7 @@ public class Main implements Runnable {
 			if (target instanceof String) {
 				process((String) target);
 			} else if (target instanceof List) {
-				for (Object e: (List) target) {
+				for (Object e: (List<?>) target) {
 					if (e == null) continue;
 					process(e.toString());
 				}
@@ -315,6 +315,7 @@ public class Main implements Runnable {
 	    }
 	}
 	
+	@SuppressWarnings("deprecation")
 	private void process(Path f) {
 		{
 			String n = f.getFileName().toString().toLowerCase();
@@ -971,8 +972,8 @@ public class Main implements Runnable {
 		panel.add(panel_7);
 		panel_7.setLayout(new BorderLayout(0, 0));
 		
-		JComboBox comboBox = new JComboBox();
-		comboBox.setModel(new DefaultComboBoxModel(modeNames));
+		JComboBox<String> comboBox = new JComboBox<>();
+		comboBox.setModel(new DefaultComboBoxModel<String>(modeNames));
 		panel_7.add(comboBox);
 		
 		JLabel lblNewLabel_3 = new JLabel("Mode: ");
@@ -1048,7 +1049,7 @@ public class Main implements Runnable {
 						Transferable t = dtde.getTransferable();
 						if (t.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
 							dtde.acceptDrop(dtde.getDropAction());
-							List transferData = (List) t.getTransferData(DataFlavor.javaFileListFlavor);
+							List<?> transferData = (List<?>) t.getTransferData(DataFlavor.javaFileListFlavor);
 							
 	                        if (transferData != null && transferData.size() > 0) {
 	                        	StringBuilder sb = new StringBuilder();
