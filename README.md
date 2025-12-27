@@ -22,3 +22,4 @@ Advertisement engines:
 Misc:
 - SMS sending removal
 - ASGATech time-bomb
+- Game Lobby (M7 Networks) (partially)

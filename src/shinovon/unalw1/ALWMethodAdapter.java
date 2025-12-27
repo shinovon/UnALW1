@@ -15,6 +15,8 @@ public class ALWMethodAdapter extends MethodVisitor {
 	private String desc;
 	
 	private int greystripeCheck;
+	
+	private Object lastLdc;
 
 	public ALWMethodAdapter(ALWClassAdapter classAdapter, MethodVisitor visitor, String className, String superName, String name, String desc) {
 		super(Opcodes.ASM4, visitor);
@@ -152,11 +154,21 @@ public class ALWMethodAdapter extends MethodVisitor {
 			super.visitMethodInsn(Opcodes.INVOKEVIRTUAL, className, "startMainApp", "()V");
 			Main.inst.smPatched = true;
 			return;
+		} else if ("auto".equals(Main.inst.mode)
+				&& name.equals("getAppProperty") && desc.equals("(Ljava/lang/String;)Ljava/lang/String;")
+				&& "Demo-Time".equals(lastLdc)) {
+			// patch Demo-Time
+			Main.inst.log("Patched getAppProperty(Demo-Time): " + className + '.' + this.name + this.desc);
+			super.visitInsn(Opcodes.POP);
+			super.visitInsn(Opcodes.POP);
+			super.visitLdcInsn(Integer.toString(Integer.MAX_VALUE / 1000));
+			return;
 		}
 		super.visitMethodInsn(opcode, owner, name, desc);
 	}
 	
 	public void visitLdcInsn(Object cst) {
+		lastLdc = cst;
 		if (cst instanceof String && cst.equals("Connection failed")
 				&& Main.inst.hasGsid && this.className.indexOf('/') != -1 && this.desc.equals("()V") ) {
 			// greystripe: find start function by exception message "Connection failed"
@@ -194,6 +206,11 @@ public class ALWMethodAdapter extends MethodVisitor {
 			// glomo
 			Main.inst.log("GlomoRegistrator string constant found: " + this.className + '.' + this.name + this.desc);
 			Main.inst.glomoRegClass = className;
+		} else if (cst instanceof String && (cst.equals("M7-URI") || cst.equals("PCS-Game-Lobby-API"))
+				&& this.name.equals("<init>")) {
+			// m7
+			Main.inst.log("M7 string constant found: " + this.className + '.' + this.name + this.desc);
+			Main.inst.m7Class = className;
 		}
 		super.visitLdcInsn(cst);
 	}

@@ -117,6 +117,7 @@ public class Main implements Runnable {
 	public boolean asgatechPatched;
 	public boolean smPatched;
 	public boolean ptaxcblPatched;
+	public boolean m7Patched;
 	
 	// greystripe
 	public String greystripeConnectionClass;
@@ -148,6 +149,9 @@ public class Main implements Runnable {
 	
 	//
 	public boolean hasCfgData;
+	
+	// m7
+	public String m7Class;
 	
 	Map<String, ClassNode> classNodes = new HashMap<String, ClassNode>();
 
@@ -532,7 +536,7 @@ public class Main implements Runnable {
 												// glomo: find checkSerial()
 												InsnList ins = mn.instructions;
 												for (AbstractInsnNode n = ins.getFirst(); n != null; n = n.getNext()) {
-													// parseLong() == ActivationKey()
+													// has Date.getTime() call
 													if (n.getOpcode() == Opcodes.INVOKEVIRTUAL && n instanceof MethodInsnNode
 															&& ((MethodInsnNode) n).name.equals("getTime")) {
 														log("Glomo patched (method 2, checkSerial): " + className + '.' + mn.name + mn.desc);
@@ -550,6 +554,41 @@ public class Main implements Runnable {
 												clearFunction(mn);
 												mn.instructions.add(new LdcInsnNode(""));
 												mn.instructions.add(new InsnNode(Opcodes.ARETURN));
+											}
+										} else if (("auto".equals(mode) || "m7".equals(mode))
+												 && m7Class != null && className.equals(m7Class)) {
+											// m7: GCMIDlet
+											InsnList ins = mn.instructions;
+											boolean hasNameLdc = false,
+													hasGetPNLdc = false,
+													hasGameCodeLdc = false;
+											for (AbstractInsnNode n = ins.getFirst(); n != null; n = n.getNext()) {
+												if (n.getOpcode() == Opcodes.LDC && n instanceof LdcInsnNode) {
+													if ("name".equals(((LdcInsnNode) n).cst)) {
+														hasNameLdc = true;
+													} else if ("getPN".equals(((LdcInsnNode) n).cst)) {
+														hasGetPNLdc = true;
+													} else if ("M7-Game-Code".equals(((LdcInsnNode) n).cst)
+															|| "PCS-Game-Code".equals(((LdcInsnNode) n).cst)) {
+														hasGameCodeLdc = true;
+													}
+												}
+											}
+											
+											if (hasNameLdc && hasGetPNLdc && "(Z)Ljava/lang/String;".equals(mn.desc)) {
+												// patch getPlayerName() to return constant ""
+												m7Patched = true;
+												log("Patched M7 getPlayerName: " + className + '.' + mn.name + mn.desc);
+												clearFunction(mn);
+												ins.add(new LdcInsnNode(""));
+												ins.add(new InsnNode(Opcodes.ARETURN));
+											} else if (hasGameCodeLdc && "()I".equals(mn.desc)) {
+												// patch getGameCode() to return constant 1
+												m7Patched = true;
+												log("Patched M7 getGameCode: " + className + '.' + mn.name + mn.desc);
+												clearFunction(mn);
+												ins.add(new InsnNode(Opcodes.ICONST_1));
+												ins.add(new InsnNode(Opcodes.IRETURN));
 											}
 										}
 										
@@ -769,7 +808,8 @@ public class Main implements Runnable {
 							&& !infondPatched
 							&& !asgatechPatched
 							&& !smPatched
-							&& !ptaxcblPatched) {
+							&& !ptaxcblPatched
+							&& !m7Patched) {
 						if (hasGsid) {
 							logError("Greystripe was detected, but could not patch it, please report to developer!", false);
 							failed = true;
@@ -1093,6 +1133,7 @@ public class Main implements Runnable {
 		asgatechPatched = false;
 		smPatched = false;
 		ptaxcblPatched = false;
+		m7Patched = false;
 		
 		greystripeConnectionClass = null;
 		greystripeRunnerClass = null;
@@ -1117,6 +1158,8 @@ public class Main implements Runnable {
 		glomoRegClass = null;
 		
 		hasCfgData = false;
+		
+		m7Class = null;
 		
 		failed = false;
 		
