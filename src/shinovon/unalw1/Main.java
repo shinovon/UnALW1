@@ -614,49 +614,6 @@ public class Main implements Runnable {
 												ins.add(new InsnNode(Opcodes.ICONST_1));
 												ins.add(new InsnNode(Opcodes.IRETURN));
 											}
-										} else if (("auto".equals(mode) || "mobilerated".equals(mode))
-												 && mobileratedClass != null && "javax/microedition/midlet/MIDlet".equals(node.superName)) {
-											// mobilerated: unwrap midlet
-
-											InsnList ins = mn.instructions;
-											if ("destroyApp".equals(mn.name)) {
-												clearFunction(mn);
-												ins.add(new InsnNode(Opcodes.RETURN));
-												Main.inst.log("MobileRated MIDlet destroyApp patched: " + className + '.' + mn.name + mn.desc);
-											} else {
-												String realStartApp = null;
-												boolean notifyDestroyed = false;
-												for (AbstractInsnNode n = ins.getFirst(); n != null; n = n.getNext()) {
-													if (n.getOpcode() == Opcodes.INVOKEVIRTUAL) {
-														if ("notifyDestroyed".equals(((MethodInsnNode) n).name)) {
-															notifyDestroyed = true;
-															break;
-														}
-														if ("startApp".equals(mn.name)
-																&& ((MethodInsnNode) n).owner.equals(className)
-																&& ((MethodInsnNode) n).desc.equals("()V")) {
-															realStartApp = ((MethodInsnNode) n).name;
-															Main.inst.log("MobileRated real startApp found: " + className + '.' + ((MethodInsnNode) n).name + ((MethodInsnNode) n).desc);
-															break;
-														}
-													}
-												}
-												
-												if (realStartApp != null) {
-													clearFunction(mn);
-													ins.add(new VarInsnNode(Opcodes.ALOAD, 0));
-													ins.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, className, realStartApp, "()V"));
-													ins.add(new InsnNode(Opcodes.RETURN));
-													Main.inst.log("MobileRated MIDlet startApp patched: " + className + '.' + mn.name + mn.desc);
-													mobileratedPatched = true;
-												} else if (notifyDestroyed) {
-													clearFunction(mn);
-													ins.add(new VarInsnNode(Opcodes.ALOAD, 0));
-													ins.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "javax/microedition/midlet/MIDlet", "notifyDestroyed", "()V"));
-													ins.add(new InsnNode(Opcodes.RETURN));
-													Main.inst.log("MobileRated MIDlet notifyDestroyed patched: " + className + '.' + mn.name + mn.desc);
-												}
-											}
 										}
 										
 										if (hasCfgData && (mn.access & Opcodes.ACC_STATIC) != 0) {
@@ -822,6 +779,52 @@ public class Main implements Runnable {
 												clearFunction(mn);
 												mn.instructions.add(new InsnNode(Opcodes.RETURN));
 												continue;
+											}
+										}
+									}
+								} else if (("auto".equals(mode) || "mobilerated".equals(mode))
+										 && mobileratedClass != null && "javax/microedition/midlet/MIDlet".equals(node.superName)) {
+									// mobilerated: unwrap midlet
+
+									for (Object m : node.methods) {
+										MethodNode mn = (MethodNode) m;
+										InsnList ins = mn.instructions;
+										if ("destroyApp".equals(mn.name)) {
+											clearFunction(mn);
+											ins.add(new InsnNode(Opcodes.RETURN));
+											Main.inst.log("MobileRated MIDlet destroyApp patched: " + className + '.' + mn.name + mn.desc);
+										} else {
+											String realStartApp = null;
+											boolean notifyDestroyed = false;
+											for (AbstractInsnNode n = ins.getFirst(); n != null; n = n.getNext()) {
+												if (n.getOpcode() == Opcodes.INVOKEVIRTUAL) {
+													if ("notifyDestroyed".equals(((MethodInsnNode) n).name)) {
+														notifyDestroyed = true;
+														break;
+													}
+													if ("startApp".equals(mn.name)
+															&& ((MethodInsnNode) n).owner.equals(className)
+															&& ((MethodInsnNode) n).desc.equals("()V")) {
+														realStartApp = ((MethodInsnNode) n).name;
+														Main.inst.log("MobileRated real startApp found: " + className + '.' + ((MethodInsnNode) n).name + ((MethodInsnNode) n).desc);
+														break;
+													}
+												}
+											}
+											
+											if (realStartApp != null) {
+												clearFunction(mn);
+												ins.add(new VarInsnNode(Opcodes.ALOAD, 0));
+												ins.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, className, realStartApp, "()V"));
+												ins.add(new InsnNode(Opcodes.RETURN));
+												Main.inst.log("MobileRated MIDlet startApp patched: " + className + '.' + mn.name + mn.desc);
+												mobileratedPatched = true;
+											} else if (notifyDestroyed) {
+												clearFunction(mn);
+												ins.add(new VarInsnNode(Opcodes.ALOAD, 0));
+												ins.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "javax/microedition/midlet/MIDlet", "notifyDestroyed", "()V"));
+												ins.add(new InsnNode(Opcodes.RETURN));
+												Main.inst.log("MobileRated MIDlet notifyDestroyed patched: " + className + '.' + mn.name + mn.desc);
 											}
 										}
 									}
