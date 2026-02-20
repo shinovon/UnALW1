@@ -229,6 +229,11 @@ public class ALWMethodAdapter extends MethodVisitor {
 			// m7
 			Main.inst.log("M7 string constant found: " + this.className + '.' + this.name + this.desc);
 			Main.inst.m7Class = className;
+		} else if (cst instanceof String && (((String) cst).startsWith("/wapdir/Applications/Games"))
+				&& this.name.equals("<clinit>")) {
+			// mobilerated
+			Main.inst.log("MobileRated string constant found: " + this.className + '.' + this.name + this.desc);
+			Main.inst.mobileratedClass = className;
 		}
 		super.visitLdcInsn(cst);
 	}
