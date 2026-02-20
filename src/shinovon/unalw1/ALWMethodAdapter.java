@@ -35,6 +35,8 @@ public class ALWMethodAdapter extends MethodVisitor {
 	private int greystripeCheck;
 	
 	private Object lastLdc;
+	
+	private boolean realAppStartedBool;
 
 	public ALWMethodAdapter(ALWClassAdapter classAdapter, MethodVisitor visitor, String className, String superName, String name, String desc) {
 		super(Opcodes.ASM4, visitor);
@@ -55,7 +57,7 @@ public class ALWMethodAdapter extends MethodVisitor {
 				
 				// realAppStarted = 1;
 				super.visitInsn(Opcodes.ICONST_1);
-				super.visitFieldInsn(Opcodes.PUTSTATIC, this.className, "realAppStarted", "I");
+				super.visitFieldInsn(Opcodes.PUTSTATIC, this.className, "realAppStarted", realAppStartedBool ? "Z" : "I");
 				
 				// this.startRealApp()
 				super.visitVarInsn(Opcodes.ALOAD, 0);
@@ -252,4 +254,12 @@ public class ALWMethodAdapter extends MethodVisitor {
 		super.visitIntInsn(opcode, operand);
 	}
 
+	public void visitFieldInsn(int opcode, String owner, String name,
+            String desc) {
+		if ("realAppStarted".equals(name)) {
+			realAppStartedBool = "Z".equals(desc);
+		}
+        super.mv.visitFieldInsn(opcode, owner, name, desc);
+    }
+	
 }
