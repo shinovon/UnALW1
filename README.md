@@ -5,12 +5,13 @@ Tool for removing ad and payment engines from J2ME games
 
 ## Currently supports
 Payment engines, demo wrappers:
-- ALW1/ALW2
+- ALW/ALW1/ALW2
 - Freexter
 - Glomo
 - LM (Aircel)
 - Gameloft
 - Infon Demotoolkit
+- MobileRated (Kalador)
 
 Advertisement engines:
 - vServ
