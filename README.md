@@ -12,6 +12,7 @@ Payment engines, demo wrappers:
 - Gameloft
 - Infon Demotoolkit
 - MobileRated (Kalador)
+- Mbiz Global
 
 Advertisement engines:
 - vServ

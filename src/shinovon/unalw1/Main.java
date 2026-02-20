@@ -99,6 +99,7 @@ public class Main implements Runnable {
 			"sm",
 			"sms",
 			"mobilerated",
+			"mbizglobal",
 	};
 	
 	public static final String[] modeNames = {
@@ -115,7 +116,8 @@ public class Main implements Runnable {
 			"Infond",
 			"Sensible Mobiles",
 			"SMS",
-			"MobileRated"
+			"MobileRated",
+			"MbizGlobal"
 	};
 	
 	static Main inst;
@@ -139,6 +141,7 @@ public class Main implements Runnable {
 	public boolean ptaxcblPatched;
 	public boolean m7Patched;
 	public boolean mobileratedPatched;
+	public boolean mbizPatched;
 	
 	// greystripe
 	public String greystripeConnectionClass;
@@ -176,6 +179,10 @@ public class Main implements Runnable {
 	
 	// mobilerated
 	public String mobileratedClass;
+	
+	// mbizglobal
+	public boolean hasMbizglobalDat;
+	public String mbizglobalClass;
 	
 	Map<String, ClassNode> classNodes = new HashMap<String, ClassNode>();
 
@@ -399,6 +406,13 @@ public class Main implements Runnable {
 							// ptaxcbl: check for cfg.data resource
 							if (hasCfgData = zipFile.getEntry("cfg.data") != null || zipFile.getEntry("/cfg.data") != null) {
 								log("Found cfg.data");
+							}
+						}
+						if ("auto".equals(mode) || "mbizglobal".equals(mode)) {
+							// mbizglobal: check for mbizglobal.dat resource
+							if (zipFile.getEntry("mbizglobal.dat") != null || zipFile.getEntry("/mbizglobal.dat") != null) {
+								hasMbizglobalDat = true;
+								log("Found mbizglobal.dat, assuming MBizGlobal");
 							}
 						}
 						
@@ -828,6 +842,46 @@ public class Main implements Runnable {
 											}
 										}
 									}
+								} else if (mbizglobalClass != null && className.equals(mbizglobalClass)) {
+									for (Object m : node.methods) {
+										MethodNode mn = (MethodNode) m;
+										
+										InsnList ins = mn.instructions;
+										for (AbstractInsnNode n : ins.toArray()) {
+											// patch getAppProperty calls to remove dependency on jad
+											if (n.getOpcode() == Opcodes.INVOKEVIRTUAL && "getAppProperty".equals(((MethodInsnNode) n).name)) {
+												String ldc = (String) ((LdcInsnNode) n.getPrevious()).cst;
+												String replace = null;
+												if ("Serial".equals(ldc)) {
+													replace = "TEST,MOBILE";
+												} else if ("SMSType".equals(ldc)) {
+													replace = "0";
+												} else if ("MAXSMSSEND".equals(ldc)) {
+													replace = "2";
+												} else if ("AutoPlatform".equals(ldc)) {
+													replace = "on";
+												} else if ("FullVersion".equals(ldc)) {
+													replace = "true";
+												} else if ("Phone".equals(ldc)) {
+													replace = "U600";
+												} else if ("Platform".equals(ldc)) {
+													replace = "GSM_ALLEUROPE";
+												} else {
+													continue;
+												}
+												
+												ins.remove(n.getPrevious()); // pop ldc
+												ins.remove(n.getPrevious()); // pop getfield
+												if (replace == null) {
+													ins.set(n, new InsnNode(Opcodes.ACONST_NULL));
+												} else {
+													ins.set(n, new LdcInsnNode(replace));
+												}
+												log("Patched getAppProperty(" + ldc + ") to " + replace + " at " + className + '.' + mn.name + mn.desc);
+												mbizPatched = true;
+											}
+										}
+									}
 								}
 								
 								if (noOutput) continue;
@@ -875,12 +929,14 @@ public class Main implements Runnable {
 							&& !greystripePatched2
 							&& !glomoPatched
 							&& !lmPatched
+							&& !gloftPatched
 							&& !infondPatched
 							&& !asgatechPatched
 							&& !smPatched
 							&& !ptaxcblPatched
 							&& !m7Patched
-							&& !mobileratedPatched) {
+							&& !mobileratedPatched
+							&& !mbizPatched) {
 						if (hasGsid) {
 							logError("Greystripe was detected, but could not patch it, please report to developer!", false);
 							failed = true;
@@ -1206,6 +1262,7 @@ public class Main implements Runnable {
 		ptaxcblPatched = false;
 		m7Patched = false;
 		mobileratedPatched = false;
+		mbizPatched = false;
 		
 		greystripeConnectionClass = null;
 		greystripeRunnerClass = null;
@@ -1234,6 +1291,9 @@ public class Main implements Runnable {
 		m7Class = null;
 		
 		mobileratedClass = null;
+		
+		hasMbizglobalDat = false;
+		mbizglobalClass = null;
 		
 		failed = false;
 		

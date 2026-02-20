@@ -183,6 +183,16 @@ public class ALWMethodAdapter extends MethodVisitor {
 			super.visitInsn(Opcodes.POP);
 			super.visitLdcInsn(Integer.toString(Integer.MAX_VALUE / 1000));
 			return;
+		} else if ("auto".equals(Main.inst.mode)
+				&& name.equals("getAppProperty") && desc.equals("(Ljava/lang/String;)Ljava/lang/String;")
+				&& "more_games_status".equals(lastLdc)) {
+			// gameloft: patch more_games_status
+			Main.inst.log("Patched getAppProperty(more_games_status): " + className + '.' + this.name + this.desc);
+			super.visitInsn(Opcodes.POP);
+			super.visitInsn(Opcodes.POP);
+			super.visitLdcInsn("off");
+			Main.inst.gloftPatched = true;
+			return;
 		}
 		super.visitMethodInsn(opcode, owner, name, desc);
 	}
@@ -236,6 +246,10 @@ public class ALWMethodAdapter extends MethodVisitor {
 			// mobilerated
 			Main.inst.log("MobileRated string constant found: " + this.className + '.' + this.name + this.desc);
 			Main.inst.mobileratedClass = className;
+		} else if (cst instanceof String && cst.equals("/mbizglobal.dat")) {
+			// mobilerated
+			Main.inst.log("MBizGlobal string constant found: " + this.className + '.' + this.name + this.desc);
+			Main.inst.mbizglobalClass = className;
 		}
 		super.visitLdcInsn(cst);
 	}
