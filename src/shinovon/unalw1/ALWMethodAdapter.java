@@ -48,7 +48,7 @@ public class ALWMethodAdapter extends MethodVisitor {
 	@SuppressWarnings("deprecation")
 	public void visitInsn(int opcode) {
 		if (("alw1".equals(Main.inst.mode) || "auto".equals(Main.inst.mode))
-				&& (className.endsWith("ALW1") || className.endsWith("ALW2"))
+				&& (className.endsWith("ALW") || className.endsWith("ALW1") || className.endsWith("ALW2"))
 				&& name.equals("startApp") && desc.equals("()V")) {
 			if (opcode == Opcodes.RETURN) {
 				// alw1: add this.startRealApp() at the end of startApp()
@@ -117,7 +117,7 @@ public class ALWMethodAdapter extends MethodVisitor {
 			super.visitInsn(Opcodes.POP);
 			return;
 		} else if (("alw1".equals(Main.inst.mode) || "auto".equals(Main.inst.mode))
-				&& (className.endsWith("ALW1") || className.endsWith("ALW2"))
+				&& (className.endsWith("ALW") || className.endsWith("ALW1") || className.endsWith("ALW2"))
 				&& this.name.equals("startApp") && this.desc.equals("()V")
 				&& opcode == Opcodes.INVOKESPECIAL && name.equals("startApp") && desc.equals("()V")) {
 			// alw1: add return after super.startApp();
