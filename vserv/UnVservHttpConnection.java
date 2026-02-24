@@ -12,11 +12,12 @@ import java.io.OutputStream;
 import javax.microedition.io.HttpConnection;
 
 public class UnVservHttpConnection implements HttpConnection {
+	private static int redirectCounter = 0;
 	private String url;
 
 	public UnVservHttpConnection(String url) {
 		this.url = url;
-		System.out.println("vServ connection wrapped: " + url);
+		System.out.println("(UnALW1) vServ connection wrapped: " + url);
 	}
 
 	public final String getURL() {
@@ -62,7 +63,7 @@ public class UnVservHttpConnection implements HttpConnection {
 	}
 
 	public final int getResponseCode() throws IOException {
-		return url.startsWith("vserv:") ? 200 : 302;
+		return url.startsWith("vserv:") || redirectCounter > 2 ? 200 : 302;
 	}
 
 	public final String getResponseMessage() throws IOException {
@@ -83,6 +84,7 @@ public class UnVservHttpConnection implements HttpConnection {
 
 	public final String getHeaderField(final String s) throws IOException {
 		if ("location".equalsIgnoreCase(s)) {
+			redirectCounter++;
 			return "vserv:";
 		}
 		if ("X-VSERV-CONTEXT".equals(s)) {

@@ -883,6 +883,23 @@ public class Main implements Runnable {
 										}
 									}
 								}
+								if (("auto".equals(mode) || "vserv".equals(mode))
+										&& (className.endsWith("VservManager") || className.endsWith("VservAd") || className.endsWith("VSERV_BCI_CLASS_000")
+										|| (vservClass != null && className.equals(vservClass)))) {
+									for (Object m : node.methods) {
+										MethodNode mn = (MethodNode) m;
+										
+										InsnList ins = mn.instructions;
+										for (AbstractInsnNode n : ins.toArray()) {
+											// vserv: wrap connector static calls
+											if (n.getOpcode() == Opcodes.INVOKESTATIC && "javax/microedition/io/Connector".equals(((MethodInsnNode) n).owner)) {
+												Main.inst.log("Connector call wrapped: " + ((MethodInsnNode) n).name + ((MethodInsnNode) n).desc + " in " + className + '.' + mn.name + mn.desc);
+												Main.inst.vservConnectorPatched = true;
+												((MethodInsnNode) n).owner = "UnVservConnector";
+											}
+										}
+									}
+								}
 								
 								if (noOutput) continue;
 								if (verbose) log("Writing " + className);

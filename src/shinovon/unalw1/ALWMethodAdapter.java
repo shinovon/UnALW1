@@ -71,16 +71,7 @@ public class ALWMethodAdapter extends MethodVisitor {
 	
 	@SuppressWarnings("deprecation")
 	public void visitMethodInsn(int opcode, String owner, String name, String desc) {
-		if (("vserv".equals(Main.inst.mode)
-				|| ("auto".equals(Main.inst.mode)
-						&& (className.endsWith("VservManager") || className.endsWith("VservAd") || className.endsWith("VSERV_BCI_CLASS_000")
-								|| className.equals(Main.inst.vservClass))))
-				&& "javax/microedition/io/Connector".equals(owner)) {
-			// vserv: wrap connector static calls
-			Main.inst.log("Connector call wrapped: " + name + desc + " in " + className + '.' + this.name + this.desc);
-			Main.inst.vservConnectorPatched = true;
-			owner = "UnVservConnector";
-		} else if (("ia".equals(Main.inst.mode) || "auto".equals(Main.inst.mode))
+		if (("ia".equals(Main.inst.mode) || "auto".equals(Main.inst.mode))
 				&& ("innerActiveStart".equals(name) || "innerActiveStartGame".equals(name)) && "()Z".equals(desc)) {
 			// ia: remove innerActiveStart calls
 			Main.inst.log("Inneractive patched (method 1): " + name + desc + " in " + className + '.' + this.name + this.desc);
@@ -272,6 +263,12 @@ public class ALWMethodAdapter extends MethodVisitor {
             String desc) {
 		if ("realAppStarted".equals(name)) {
 			realAppStartedBool = "Z".equals(desc);
+		} else if (("auto".equals(Main.inst.mode) || "vserv".equals(Main.inst.mode))
+				&& opcode == Opcodes.PUTSTATIC && "allAdRequest".equals(name) && "Z".equals(desc)
+				&& "<clinit>".equals(this.name)) {
+			Main.inst.log("allAdRequest field patched: " + this.className + '.' + this.name + this.desc);
+			super.visitInsn(Opcodes.POP);
+			super.visitInsn(Opcodes.ICONST_0);
 		}
         super.mv.visitFieldInsn(opcode, owner, name, desc);
     }
