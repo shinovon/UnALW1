@@ -263,12 +263,12 @@ public class ALWMethodAdapter extends MethodVisitor {
             String desc) {
 		if ("realAppStarted".equals(name)) {
 			realAppStartedBool = "Z".equals(desc);
-		} else if (("auto".equals(Main.inst.mode) || "vserv".equals(Main.inst.mode))
-				&& opcode == Opcodes.PUTSTATIC && "allAdRequest".equals(name) && "Z".equals(desc)
-				&& "<clinit>".equals(this.name)) {
-			Main.inst.log("allAdRequest field patched: " + this.className + '.' + this.name + this.desc);
-			super.visitInsn(Opcodes.POP);
-			super.visitInsn(Opcodes.ICONST_0);
+//		} else if (("auto".equals(Main.inst.mode) || "vserv".equals(Main.inst.mode))
+//				&& opcode == Opcodes.PUTSTATIC && "allAdRequest".equals(name) && "Z".equals(desc)
+//				&& "<clinit>".equals(this.name)) {
+//			Main.inst.log("allAdRequest field patched: " + this.className + '.' + this.name + this.desc);
+//			super.visitInsn(Opcodes.POP);
+//			super.visitInsn(Opcodes.ICONST_0);
 		}
         super.mv.visitFieldInsn(opcode, owner, name, desc);
     }
